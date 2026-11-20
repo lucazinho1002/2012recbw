@@ -16,41 +16,39 @@
 
   <div id="app-container">
     <div class="screen subpage-screen">
-      <div class="subpage-brand-strip">
+      <div class="subpage-brand-col">
         <div class="vertical-brand-text">BLOCKSWORLD</div>
-        <div style="font-size: 9px; font-weight: 700; color: #a8a8a8;">OPTIONS</div>
       </div>
 
-      <div class="subpage-main">
-        <div class="subpage-topbar">
+      <div class="subpage-content">
+        <div class="subpage-header">
           <h1>Settings</h1>
-          <a href="index.html" class="bw-pill-btn" style="padding: 8px 18px;">← Main Menu</a>
+          <a href="index.html" class="bw-pill-btn" style="padding: 8px 18px;">←</a>
         </div>
 
-        <div class="settings-panel-box">
-          <div class="bw-setting-item">
+        <div class="settings-box">
+          <div class="setting-row">
             <span>Sound Effects</span>
-            <input type="checkbox" class="bw-switch" id="opt-sound" checked>
+            <input type="checkbox" id="opt-sound" checked>
           </div>
-          <div class="bw-setting-item">
-            <span>Build Ground Grid</span>
-            <input type="checkbox" class="bw-switch" id="opt-grid" checked>
+          <div class="setting-row">
+            <span>Ground Grid</span>
+            <input type="checkbox" id="opt-grid" checked>
           </div>
-          <div class="bw-setting-item">
-            <span>Real-time 3D Shadows</span>
-            <input type="checkbox" class="bw-switch" id="opt-shadows" checked>
+          <div class="setting-row">
+            <span>3D Shadows</span>
+            <input type="checkbox" id="opt-shadows" checked>
           </div>
-          <p id="settings-status" style="color: #2e8b57; font-size: 13px; font-weight: 800; min-height: 18px;"></p>
+          <p id="settings-status" style="color: #229419; font-size: 13px; font-weight: 800; min-height: 18px;"></p>
         </div>
 
         <div style="display: flex; gap: 12px;">
-          <button id="btn-save-settings" class="bw-pill-btn primary" style="width: 180px;">Save Settings</button>
+          <button id="btn-save-settings" class="bw-pill-btn" style="width: 170px;">Save</button>
           <a href="index.html" class="bw-pill-btn" style="width: 150px;">Done</a>
         </div>
       </div>
     </div>
   </div>
-
   <script src="js/settings.js"></script>
 </body>
 </html>

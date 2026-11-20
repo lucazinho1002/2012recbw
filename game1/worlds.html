@@ -16,48 +16,64 @@
 
   <div id="app-container">
     <div class="screen subpage-screen">
-      <div class="subpage-brand-strip">
+      <div class="subpage-brand-col">
         <div class="vertical-brand-text">BLOCKSWORLD</div>
-        <div style="font-size: 9px; font-weight: 700; color: #a8a8a8;">WORLDS</div>
       </div>
 
-      <div class="subpage-main">
-        <div class="subpage-topbar">
+      <div class="subpage-content">
+        <div class="subpage-header">
           <h1>My Worlds</h1>
-          <a href="index.html" class="bw-pill-btn" style="padding: 8px 18px;">← Main Menu</a>
+          <a href="index.html" class="bw-pill-btn" style="padding: 8px 18px;">←</a>
         </div>
 
-        <div class="worlds-gallery-grid">
-          <a href="editor.html?world=rocket" class="gallery-card">
-            <div class="gallery-thumb">🚀</div>
-            <div class="gallery-meta">
-              <h3>Rocket Test</h3>
-              <p>Red cube + Rocket programmed to TAP LEFT → FIRE.</p>
-            </div>
-          </a>
-
-          <a href="editor.html?world=car" class="gallery-card">
-            <div class="gallery-thumb">🏎️</div>
-            <div class="gallery-meta">
-              <h3>Car &amp; Jump Ramp</h3>
-              <p>4-wheel vehicle with Dude driver and orange jump ramp.</p>
-            </div>
-          </a>
-
-          <a href="editor.html?world=alien" class="gallery-card">
-            <div class="gallery-thumb">👽</div>
-            <div class="gallery-meta">
-              <h3>Dude &amp; Alien</h3>
-              <p>Character test scene with wedge block.</p>
-            </div>
-          </a>
+        <div class="worlds-grid-list" id="my-worlds-container">
+          <!-- Os mundos criados e salvos aparecem aqui dinamicamente -->
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
-          <a href="editor.html?world=empty" class="bw-pill-btn primary" style="width: 190px;">+ New World</a>
+          <button id="btn-new-world" class="bw-pill-btn" style="width: 180px;">+ New World</button>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+    function renderWorlds() {
+      const container = document.getElementById("my-worlds-container");
+      container.innerHTML = "";
+
+      // Recupera a lista de mundos salvos no localStorage
+      let savedWorlds = JSON.parse(localStorage.getItem("bw_my_worlds") || "[]");
+
+      // Se não houver nenhum mundo salvo, cria um mundo padrão inicial
+      if (savedWorlds.length === 0) {
+        savedWorlds = [{ id: "my_custom_world", name: "My Sandbox World" }];
+        localStorage.setItem("bw_my_worlds", JSON.stringify(savedWorlds));
+      }
+
+      savedWorlds.forEach(w => {
+        const card = document.createElement("a");
+        card.href = `editor.html?world=${w.id}`;
+        card.className = "world-item-card";
+        card.innerHTML = `
+          <div class="world-item-art">🌍</div>
+          <div class="world-item-title">${w.name}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById("btn-new-world").addEventListener("click", () => {
+      const newId = "world_" + Date.now();
+      let savedWorlds = JSON.parse(localStorage.getItem("bw_my_worlds") || "[]");
+      savedWorlds.push({ id: newId, name: `World ${savedWorlds.length + 1}` });
+      localStorage.setItem("bw_my_worlds", JSON.stringify(savedWorlds));
+      
+      // Direciona para o editor com o novo ID de mundo
+      window.location.href = `editor.html?world=${newId}`;
+    });
+
+    document.addEventListener("DOMContentLoaded", renderWorlds);
+  </script>
 </body>
 </html>

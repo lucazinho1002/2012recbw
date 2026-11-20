@@ -1,165 +1,76 @@
 #screen-menu {
   flex-direction: row;
-  background: #f9f9f9;
+  background: #ffffff;
+  padding: 16px 22px;
+  gap: 18px;
 }
 
-/* COLUNA ESQUERDA COM TÍTULO VERTICAL BLOCKSWORLD */
-.menu-sidebar-brand {
-  width: 17%;
-  background: linear-gradient(90deg, #ededed 0%, #f5f5f5 100%);
-  border-right: 1px solid #dddddd;
+.menu-brand-col {
+  width: 14%;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   align-items: center;
-  padding: 22px 8px;
+  justify-content: center;
 }
 
 .vertical-brand-text {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-size: clamp(24px, 5.2vh, 44px);
+  font-size: clamp(28px, 6.2vh, 52px);
   font-weight: 900;
-  color: #c2c2c2;
+  color: #c6c6c6;
   letter-spacing: 3px;
-  text-shadow: 0 1px 0 #ffffff;
 }
 
-.brand-sub {
-  font-size: 9px;
-  font-weight: 700;
-  color: #a8a8a8;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  text-align: center;
-}
-
-/* ÁREA CENTRAL: THUMBNAILS DOS MUNDOS */
-.menu-worlds-area {
-  width: 53%;
-  padding: 22px 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  background: #ffffff;
-}
-
-.section-caption {
-  font-size: 11px;
-  font-weight: 800;
-  color: #999999;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.world-cards-grid {
+.menu-scroll-columns {
+  width: 52%;
+  height: 100%;
+  overflow-y: auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  width: 100%;
+  gap: 10px;
+  padding-right: 4px;
 }
 
-.world-preview-tile {
+.menu-scroll-columns::-webkit-scrollbar {
+  width: 4px;
+}
+.menu-scroll-columns::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.world-thumb-card {
+  display: block;
   text-decoration: none;
-  background: #ffffff;
-  border: 2px solid #dcdcdc;
-  border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.14s ease, border-color 0.14s ease;
-}
-
-.world-preview-tile:hover {
-  transform: scale(1.03);
-  border-color: #4a90e2;
-}
-
-.tile-scene-art {
   aspect-ratio: 4 / 3;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #d0d0d0;
   position: relative;
+  background: linear-gradient(180deg, #56b4e9 0%, #8cd3f7 48%, #36b82b 48%, #229419 100%);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+  transition: transform 0.12s ease;
+}
+
+.world-thumb-card:hover {
+  transform: scale(1.02);
+  border-color: #3d8be0;
+}
+
+.thumb-art-center {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  font-size: 34px;
 }
 
-/* ILUSTRAÇÕES ISOMÉTRICAS FIÉIS AOS MUNDOS DO VÍDEO */
-.art-rocket {
-  background: linear-gradient(180deg, #87CEEB 0%, #b8e4f9 68%, #58b847 68%, #469e36 100%);
-}
-.art-car {
-  background: linear-gradient(180deg, #87CEEB 0%, #b8e4f9 68%, #58b847 68%, #469e36 100%);
-}
-.art-sandbox {
-  background: linear-gradient(180deg, #87CEEB 0%, #b8e4f9 68%, #58b847 68%, #469e36 100%);
-}
-.art-alien {
-  background: linear-gradient(180deg, #74b9ff 0%, #a3d5ff 68%, #58b847 68%, #469e36 100%);
-}
-
-.mini-cube-red {
-  width: 30px;
-  height: 30px;
-  background: #e62e2e;
-  border: 2px solid #b51d1d;
-  border-radius: 3px;
-  position: relative;
-  margin-top: 18px;
-  box-shadow: 2px 3px 0 rgba(0,0,0,0.18);
-}
-
-.mini-rocket-body {
-  width: 14px;
-  height: 24px;
-  background: linear-gradient(90deg, #dcdcdc, #ffffff, #b0b0b0);
-  border: 1px solid #888;
-  border-radius: 6px 6px 2px 2px;
-  position: absolute;
-  top: -24px;
-  left: 6px;
-}
-
-.mini-car-body {
-  width: 48px;
-  height: 18px;
-  background: #1e73be;
-  border: 2px solid #134e82;
-  border-radius: 3px;
-  position: relative;
-  margin-top: 22px;
-}
-
-.mini-wheel {
-  width: 14px;
-  height: 14px;
-  background: #222;
-  border: 2px solid #666;
-  border-radius: 50%;
-  position: absolute;
-  bottom: -8px;
-}
-
-.tile-footer-label {
-  padding: 6px 8px;
-  font-size: 11px;
-  font-weight: 800;
-  color: #555555;
-  background: #f7f7f7;
-  border-top: 1px solid #e5e5e5;
-  text-align: center;
-}
-
-/* COLUNA DIREITA: OS 5 BOTÕES EM PÍLULA DO VÍDEO */
-.menu-actions-col {
-  width: 30%;
-  padding: 20px 18px;
+.menu-buttons-col {
+  width: 34%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 11px;
-  background: #ffffff;
-  border-left: 1px solid #efefef;
+  gap: 13px;
+  padding-left: 8px;
 }

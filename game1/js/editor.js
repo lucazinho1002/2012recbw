@@ -4,70 +4,130 @@ let selectedBlock = null;
 let currentMode = "build";
 let isPlaying = false;
 let leftSidePressed = false;
-let rightSidePressed = false;
 let isDraggingBlock = false;
-let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.5);
+let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 let dragOffset = new THREE.Vector3();
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
+let currentWorldId = "my_custom_world";
+let draggedItemData = null;
+
+function createGreenCheckerTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512; canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  const size = 64;
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      ctx.fillStyle = (x + y) % 2 === 0 ? "#33cc29" : "#24a81b";
+      ctx.fillRect(x * size, y * size, size, size);
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(16, 16);
+  return tex;
+}
+
+function generateProceduralTexture(type) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+
+  if (type === "wood") {
+    ctx.fillStyle = "#a0522d"; ctx.fillRect(0, 0, 256, 256);
+    ctx.strokeStyle = "#8b4513"; ctx.lineWidth = 6;
+    for (let i = 0; i < 15; i++) { ctx.beginPath(); ctx.arc(128, 128, i * 16, 0, Math.PI * 2); ctx.stroke(); }
+  } else if (type === "brick") {
+    ctx.fillStyle = "#b22222"; ctx.fillRect(0, 0, 256, 256);
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 6;
+    for (let y = 0; y < 256; y += 42) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(256, y); ctx.stroke(); }
+  } else if (type === "metal") {
+    ctx.fillStyle = "#708090"; ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = "#a9a9a9"; ctx.fillRect(15, 15, 226, 226);
+  } else if (type === "carbon") {
+    ctx.fillStyle = "#1c1c1c"; ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = "#2c2c2c"; ctx.fillRect(8, 8, 115, 115); ctx.fillRect(133, 133, 115, 115);
+  } else if (type.startsWith("face_")) {
+    ctx.fillStyle = "#f2b89b"; ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = "#222222";
+    if (type === "face_dude") {
+      ctx.fillRect(70, 90, 35, 35); ctx.fillRect(150, 90, 35, 35);
+      ctx.fillRect(90, 160, 76, 18);
+    } else if (type === "face_boy") {
+      ctx.fillRect(70, 90, 30, 30); ctx.fillRect(156, 90, 30, 30);
+      ctx.beginPath(); ctx.ellipse(128, 165, 24, 16, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (type === "face_cat") {
+      ctx.beginPath(); ctx.moveTo(65, 110); ctx.lineTo(95, 95); ctx.lineTo(95, 125); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(191, 110); ctx.lineTo(161, 95); ctx.lineTo(161, 125); ctx.fill();
+      ctx.fillRect(100, 160, 56, 14);
+    } else if (type === "face_eye") {
+      ctx.beginPath(); ctx.arc(128, 128, 60, 0, Math.PI * 2); ctx.fillStyle = "#ffffff"; ctx.fill();
+      ctx.beginPath(); ctx.arc(128, 128, 28, 0, Math.PI * 2); ctx.fillStyle = "#222222"; ctx.fill();
+      ctx.beginPath(); ctx.arc(142, 114, 9, 0, Math.PI * 2); ctx.fillStyle = "#ffffff"; ctx.fill();
+    }
+  }
+  return new THREE.CanvasTexture(canvas);
+}
 
 class Block {
-  constructor(type, x, y, z, color = 0xe62e2e) {
+  constructor(type, x, y, z, color = 0xffaa00, texture = null, code = null) {
     this.type = type;
     this.color = color;
+    this.texture = texture;
+    this.code = code;
+    this.isWheel = type === "wheel";
     this.isRocket = type === "rocket";
-    this.isProgrammed = false;
+    this.isProgrammed = !!code;
     this.initialPos = new THREE.Vector3(x, y, z);
     this.initialQuat = new THREE.Quaternion();
 
     let geo;
-    const matOpts = { color: color, roughness: 0.35, metalness: 0.1 };
+    const matOpts = { color: color, roughness: 0.35, metalness: 0.08 };
 
-    if (type === "cube") {
+    if (type === "cube" || type === "block") {
       geo = new THREE.BoxGeometry(1, 1, 1);
-    } else if (type === "wedge") {
+    } else if (type === "wedge" || type === "slope") {
       const shape = new THREE.Shape();
-      shape.moveTo(-0.5, -0.5);
-      shape.lineTo(0.5, -0.5);
-      shape.lineTo(-0.5, 0.5);
-      shape.closePath();
+      shape.moveTo(-0.5, -0.5); shape.lineTo(0.5, -0.5); shape.lineTo(-0.5, 0.5); shape.closePath();
       geo = new THREE.ExtrudeGeometry(shape, { depth: 1, bevelEnabled: false });
       geo.center();
     } else if (type === "rocket") {
-      geo = new THREE.CylinderGeometry(0.26, 0.38, 1.2, 18);
-      matOpts.color = 0xe0e0e0;
-      matOpts.metalness = 0.7;
+      geo = new THREE.CylinderGeometry(0.26, 0.38, 1.0, 20);
+      matOpts.color = 0xd8d8d8; matOpts.metalness = 0.65;
     } else if (type === "wheel") {
-      geo = new THREE.CylinderGeometry(0.48, 0.48, 0.32, 20);
-      geo.rotateZ(Math.PI / 2);
+      geo = new THREE.CylinderGeometry(0.46, 0.46, 0.32, 24); geo.rotateZ(Math.PI / 2);
       matOpts.color = 0x222222;
+    } else if (type === "cylinder") {
+      geo = new THREE.CylinderGeometry(0.5, 0.5, 1.0, 24);
     } else if (type === "jump") {
       const rampShape = new THREE.Shape();
-      rampShape.moveTo(-1.5, -0.45);
-      rampShape.lineTo(1.5, -0.45);
-      rampShape.lineTo(1.5, 0.55);
-      rampShape.closePath();
-      geo = new THREE.ExtrudeGeometry(rampShape, { depth: 2.4, bevelEnabled: false });
-      geo.center();
-      geo.rotateY(Math.PI / 2);
-      matOpts.color = 0xff8c1a;
+      rampShape.moveTo(-1.4, -0.35); rampShape.lineTo(1.4, -0.35); rampShape.lineTo(1.4, 0.45); rampShape.closePath();
+      geo = new THREE.ExtrudeGeometry(rampShape, { depth: 0.9, bevelEnabled: false });
+      geo.center(); geo.rotateY(Math.PI / 2); matOpts.color = 0xffaa00;
     } else {
-      geo = new THREE.BoxGeometry(0.7, 1.3, 0.5);
-      matOpts.color = type === "alien" ? 0x33cc33 : 0x2d6cdf;
+      geo = new THREE.BoxGeometry(1, 1, 1);
+    }
+
+    if (texture) {
+      matOpts.map = generateProceduralTexture(texture);
+      matOpts.color = 0xffffff;
     }
 
     this.mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(matOpts));
     this.mesh.position.set(x, y, z);
-    this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
+    this.mesh.castShadow = true; this.mesh.receiveShadow = true;
     scene.add(this.mesh);
 
-    // Rocket flame visual mesh (visible when firing in play mode)
+    const edges = new THREE.EdgesGeometry(geo);
+    this.outline = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
+    this.outline.visible = false;
+    this.mesh.add(this.outline);
+
     if (this.isRocket) {
-      const flameGeo = new THREE.ConeGeometry(0.24, 0.8, 12);
+      const flameGeo = new THREE.ConeGeometry(0.24, 0.9, 12);
       flameGeo.rotateX(Math.PI);
-      const flameMat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
-      this.flameMesh = new THREE.Mesh(flameGeo, flameMat);
+      this.flameMesh = new THREE.Mesh(flameGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
       this.flameMesh.position.set(0, -0.85, 0);
       this.flameMesh.visible = false;
       this.mesh.add(this.flameMesh);
@@ -83,23 +143,38 @@ class Block {
 
     blocks.push(this);
     selectBlock(this);
+    saveCurrentWorld();
   }
 
   setColor(hex) {
     this.color = hex;
+    this.texture = null;
+    this.mesh.material.map = null;
     this.mesh.material.color.set(hex);
+    this.mesh.material.needsUpdate = true;
+    saveCurrentWorld();
+  }
+
+  setTexture(textureType) {
+    this.texture = textureType;
+    const tex = generateProceduralTexture(textureType);
+    this.mesh.material.map = tex;
+    this.mesh.material.color.set(0xffffff);
+    this.mesh.material.needsUpdate = true;
+    saveCurrentWorld();
+  }
+
+  setProgramCode(codeVal) {
+    this.code = codeVal;
+    this.isProgrammed = true;
+    saveCurrentWorld();
   }
 
   syncTransformToBody() {
     this.initialPos.copy(this.mesh.position);
     this.initialQuat.copy(this.mesh.quaternion);
     this.body.position.set(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z);
-    this.body.quaternion.set(
-      this.mesh.quaternion.x,
-      this.mesh.quaternion.y,
-      this.mesh.quaternion.z,
-      this.mesh.quaternion.w
-    );
+    this.body.quaternion.set(this.mesh.quaternion.x, this.mesh.quaternion.y, this.mesh.quaternion.z, this.mesh.quaternion.w);
   }
 
   remove() {
@@ -107,33 +182,48 @@ class Block {
     world.remove(this.body);
     blocks = blocks.filter((b) => b !== this);
     if (selectedBlock === this) deselectBlock();
+    saveCurrentWorld();
+  }
+}
+
+function saveCurrentWorld() {
+  const worldData = blocks.map(b => ({
+    type: b.type, x: b.mesh.position.x, y: b.mesh.position.y, z: b.mesh.position.z,
+    color: b.color, texture: b.texture, code: b.code
+  }));
+  localStorage.setItem(`bw_world_${currentWorldId}`, JSON.stringify(worldData));
+
+  let list = JSON.parse(localStorage.getItem("bw_my_worlds") || "[]");
+  if (!list.some(w => w.id === currentWorldId)) {
+    list.push({ id: currentWorldId, name: `World` });
+    localStorage.setItem("bw_my_worlds", JSON.stringify(list));
   }
 }
 
 function init3D() {
   const container = document.getElementById("canvas-container");
-  const settings = JSON.parse(
-    localStorage.getItem("bw_settings") || '{"sound":true,"grid":true,"shadows":true}'
-  );
+  if (!container) return;
+
+  const params = new URLSearchParams(window.location.search);
+  currentWorldId = params.get("world") || "my_custom_world";
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87CEEB);
-  scene.fog = new THREE.Fog(0x87CEEB, 28, 80);
+  scene.background = new THREE.Color(0x2cb5e8);
+  scene.fog = new THREE.Fog(0x7be0ff, 18, 52);
 
-  camera = new THREE.PerspectiveCamera(45, 4 / 3, 0.1, 1000);
-  camera.position.set(9, 7, 11);
-  camera.lookAt(0, 0.5, 0);
+  camera = new THREE.PerspectiveCamera(44, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.set(7.5, 6.2, 8.8);
+  camera.lookAt(-0.6, 0.5, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.shadowMap.enabled = settings.shadows;
+  renderer.shadowMap.enabled = true;
   container.appendChild(renderer.domElement);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.68));
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.78);
-  dirLight.position.set(15, 25, 15);
-  dirLight.castShadow = settings.shadows;
+  scene.add(new THREE.AmbientLight(0xffffff, 0.72));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
+  dirLight.position.set(12, 22, 14);
+  dirLight.castShadow = true;
   scene.add(dirLight);
 
   world = new CANNON.World();
@@ -144,67 +234,57 @@ function init3D() {
   groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
   world.addBody(groundBody);
 
-  if (settings.grid) {
-    const gridHelper = new THREE.GridHelper(40, 40, 0xffffff, 0xd8eed8);
-    gridHelper.position.y = 0.01;
-    scene.add(gridHelper);
-  }
-
+  const floorTex = createGreenCheckerTexture();
   const floorMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(40, 40),
-    new THREE.MeshStandardMaterial({ color: 0x58b847, roughness: 0.85 })
+    new THREE.PlaneGeometry(80, 80),
+    new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.75 })
   );
   floorMesh.rotation.x = -Math.PI / 2;
   floorMesh.receiveShadow = true;
   scene.add(floorMesh);
 
-  const dom = renderer.domElement;
-  dom.addEventListener("pointerdown", onPointerDown);
-  dom.addEventListener("pointermove", onPointerMove);
-  window.addEventListener("pointerup", onPointerUp);
-  window.addEventListener("resize", onResize);
+  window.addEventListener("resize", () => {
+    if (!renderer || !camera || !container.clientWidth) return;
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
 
-  const params = new URLSearchParams(window.location.search);
-  const worldPreset = params.get("world") || "empty";
-  if (worldPreset === "rocket") spawnDemoRocket();
-  else if (worldPreset === "car") spawnDemoCar();
-  else if (worldPreset === "alien") spawnDemoAlien();
+  const savedData = localStorage.getItem(`bw_world_${currentWorldId}`);
+  if (savedData !== null) {
+    loadCustomWorld(currentWorldId);
+  } else {
+    if (currentWorldId === "rocket") spawnDemoRocket();
+    else if (currentWorldId === "car") spawnDemoCar();
+  }
 
+  setupDragAndDrop();
   animate();
-}
-
-function onResize() {
-  const container = document.getElementById("canvas-container");
-  if (!renderer || !camera || !container.clientWidth) return;
-  camera.aspect = container.clientWidth / container.clientHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(container.clientWidth, container.clientHeight);
 }
 
 function animate() {
   requestAnimationFrame(animate);
-
   if (isPlaying) {
     world.step(1 / 60);
-
     blocks.forEach((b) => {
+      // Movimento de foguete
       if (b.isRocket) {
-        const firing = leftSidePressed && b.isProgrammed;
+        const firing = !b.code || leftSidePressed;
         if (b.flameMesh) b.flameMesh.visible = firing;
         if (firing) {
           blocks.forEach((other) => {
-            if (other.type !== "jump" && other.body.position.distanceTo(b.body.position) < 2.6) {
-              other.body.applyForce(new CANNON.Vec3(0, 19, -15), other.body.position);
+            if (other.body.position.distanceTo(b.body.position) < 1.4) {
+              other.body.applyForce(new CANNON.Vec3(0, 18, -10), other.body.position);
             }
           });
         }
       }
-      if (b.type === "wheel" && (leftSidePressed || rightSidePressed)) {
-        blocks.forEach((other) => {
-          if (other.type !== "jump" && other.body.position.distanceTo(b.body.position) < 2.8) {
-            other.body.applyForce(new CANNON.Vec3(0, 0, -9.5), other.body.position);
-          }
-        });
+      // Movimento de roda programada
+      if (b.isWheel && b.code) {
+        const rotating = leftSidePressed;
+        if (rotating) {
+          b.body.angularVelocity.set(0, 0, 10);
+        }
       }
       if (b.mesh && b.body) {
         b.mesh.position.copy(b.body.position);
@@ -212,72 +292,66 @@ function animate() {
       }
     });
   } else if (selectedBlock && selectedBlock.mesh) {
-    updateGizmoPosition();
+    updateOverlayPositions();
   }
-
   renderer.render(scene, camera);
 }
 
 function spawnDemoRocket() {
   clearScene();
-  const c = new Block("cube", 0, 0.5, 0, 0xe62e2e);
+  const c = new Block("cube", 0, 0.5, 0, 0xff3b1f, "face_dude");
   c.syncTransformToBody();
   const r = new Block("rocket", 0, 1.5, 0);
-  r.isProgrammed = true;
+  r.setProgramCode("TAP");
   r.syncTransformToBody();
   deselectBlock();
 }
 
 function spawnDemoCar() {
   clearScene();
-  new Block("cube", 0, 0.9, 2.5, 0x1e73be).syncTransformToBody();
-  new Block("wheel", -0.65, 0.5, 3.0).syncTransformToBody();
-  new Block("wheel", 0.65, 0.5, 3.0).syncTransformToBody();
-  new Block("wheel", -0.65, 0.5, 2.0).syncTransformToBody();
-  new Block("wheel", 0.65, 0.5, 2.0).syncTransformToBody();
-  new Block("dude", 0, 1.9, 2.5).syncTransformToBody();
-  new Block("jump", 0, 0.5, -3.5).syncTransformToBody();
+  new Block("cube", 0, 0.85, 2.5, 0xff3b1f).syncTransformToBody();
+  const w1 = new Block("wheel", -0.65, 0.5, 3.0); w1.setProgramCode("TAP"); w1.syncTransformToBody();
+  const w2 = new Block("wheel", 0.65, 0.5, 3.0); w2.setProgramCode("TAP"); w2.syncTransformToBody();
+  new Block("jump", 0, 0.4, -3.2).syncTransformToBody();
   deselectBlock();
 }
 
-function spawnDemoAlien() {
+function loadCustomWorld(id) {
   clearScene();
-  new Block("alien", -0.8, 1.15, 0).syncTransformToBody();
-  new Block("dude", 0.8, 1.15, 0).syncTransformToBody();
-  new Block("wedge", 0, 0.5, -1.5, 0xffcc00).syncTransformToBody();
+  const data = JSON.parse(localStorage.getItem(`bw_world_${id}`) || "[]");
+  data.forEach(item => {
+    const b = new Block(item.type, item.x, item.y, item.z, item.color, item.texture, item.code);
+    b.syncTransformToBody();
+  });
   deselectBlock();
 }
 
 function clearScene() {
-  blocks.forEach((b) => {
-    scene.remove(b.mesh);
-    world.remove(b.body);
-  });
-  blocks = [];
-  deselectBlock();
+  blocks.forEach((b) => { scene.remove(b.mesh); world.remove(b.body); });
+  blocks = []; deselectBlock();
 }
 
 function selectBlock(block) {
   if (currentMode === "play") return;
+  blocks.forEach((b) => { if (b.outline) b.outline.visible = (b === block); });
   selectedBlock = block;
-  document.getElementById("floating-gizmo").classList.remove("hidden");
-  updateGizmoPosition();
-
-  if (block.isRocket) {
-    document.getElementById("programming-panel").classList.remove("hidden");
-    updateProgrammingPanel(block);
-  } else {
-    document.getElementById("programming-panel").classList.add("hidden");
-  }
+  document.getElementById("bw-block-gizmo").classList.remove("hidden");
+  
+  // Exibe o painel de programação para QUALQUER bloco selecionado
+  const popup = document.getElementById("rocket-logic-popup");
+  popup.classList.remove("hidden");
+  updateProgrammingPanel(block);
+  updateOverlayPositions();
 }
 
 function deselectBlock() {
+  blocks.forEach((b) => { if (b.outline) b.outline.visible = false; });
   selectedBlock = null;
-  document.getElementById("floating-gizmo").classList.add("hidden");
-  document.getElementById("programming-panel").classList.add("hidden");
+  document.getElementById("bw-block-gizmo").classList.add("hidden");
+  document.getElementById("rocket-logic-popup").classList.add("hidden");
 }
 
-function updateGizmoPosition() {
+function updateOverlayPositions() {
   if (!selectedBlock) return;
   const container = document.getElementById("canvas-container");
   const vector = selectedBlock.mesh.position.clone();
@@ -285,204 +359,190 @@ function updateGizmoPosition() {
   const x = (vector.x * 0.5 + 0.5) * container.clientWidth;
   const y = (-vector.y * 0.5 + 0.5) * container.clientHeight;
 
-  const gizmo = document.getElementById("floating-gizmo");
-  gizmo.style.left = `${x - 40}px`;
-  gizmo.style.top = `${y - 62}px`;
+  const gizmo = document.getElementById("bw-block-gizmo");
+  gizmo.style.left = `${x + 28}px`; gizmo.style.top = `${y - 28}px`;
+
+  const popup = document.getElementById("rocket-logic-popup");
+  if (!popup.classList.contains("hidden")) {
+    popup.style.left = `${Math.max(195, x - 48)}px`;
+    popup.style.top = `${y + 34}px`;
+  }
 }
 
 function updateProgrammingPanel(block) {
   const slot = document.getElementById("slot-event");
-  if (block.isProgrammed) {
-    slot.textContent = "TAP LEFT";
-    slot.classList.add("filled-blue");
+  const actionSlot = document.getElementById("slot-action");
+  
+  if (block.code) {
+    slot.innerHTML = `<span class="ico">👈</span><span style="font-size:6px;">${block.code}</span>`;
+    slot.classList.add("filled");
   } else {
-    slot.textContent = "Tap to assign TAP LEFT";
-    slot.classList.remove("filled-blue");
+    slot.innerHTML = `▶`;
+    slot.classList.remove("filled");
   }
-}
 
-function getNormalizedMouse(event) {
-  const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-}
-
-function onPointerDown(event) {
-  if (currentMode === "play") return;
-  getNormalizedMouse(event);
-  raycaster.setFromCamera(mouse, camera);
-
-  const intersects = raycaster.intersectObjects(blocks.map((b) => b.mesh));
-  if (intersects.length > 0) {
-    const foundBlock = blocks.find((b) => b.mesh === intersects[0].object);
-    if (foundBlock) {
-      selectBlock(foundBlock);
-      isDraggingBlock = true;
-      dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), foundBlock.mesh.position);
-      const intersectPoint = new THREE.Vector3();
-      raycaster.ray.intersectPlane(dragPlane, intersectPoint);
-      dragOffset.copy(foundBlock.mesh.position).sub(intersectPoint);
-    }
+  if (block.isRocket) {
+    actionSlot.innerHTML = `<span class="ico">🚀</span><span style="font-size:6px;">FIRE</span>`;
+  } else if (block.isWheel) {
+    actionSlot.innerHTML = `<span class="ico">⚙️</span><span style="font-size:6px;">SPIN</span>`;
   } else {
-    deselectBlock();
+    actionSlot.innerHTML = `<span class="ico">✨</span><span style="font-size:6px;">ACT</span>`;
   }
 }
 
-function onPointerMove(event) {
-  if (!isDraggingBlock || !selectedBlock || currentMode === "play") return;
-  getNormalizedMouse(event);
-  raycaster.setFromCamera(mouse, camera);
-
-  const intersectPoint = new THREE.Vector3();
-  if (raycaster.ray.intersectPlane(dragPlane, intersectPoint)) {
-    const target = intersectPoint.add(dragOffset);
-    selectedBlock.mesh.position.x = Math.round(target.x * 2) / 2;
-    selectedBlock.mesh.position.z = Math.round(target.z * 2) / 2;
-    selectedBlock.syncTransformToBody();
-    updateGizmoPosition();
-  }
-}
-
-function onPointerUp() {
-  isDraggingBlock = false;
-}
-
-function startSimulation() {
-  currentMode = "play";
-  isPlaying = true;
-  deselectBlock();
-  const playBtn = document.getElementById("btn-play");
-  playBtn.textContent = "■";
-  playBtn.classList.add("playing");
-  document.getElementById("play-controls").classList.remove("hidden");
-  document.getElementById("sidebar").classList.add("closed");
-  document.getElementById("editor-topbar").classList.add("expanded");
-
-  blocks.forEach((b) => {
-    b.syncTransformToBody();
-    if (b.body.mass > 0) {
-      b.body.type = CANNON.Body.DYNAMIC;
-      b.body.wakeUp();
-    }
+function setupDragAndDrop() {
+  // Configura arrastamento para blocos, texturas, cores e códigos
+  document.querySelectorAll("[data-block], [data-texture], [data-color], [data-code]").forEach(el => {
+    el.setAttribute("draggable", "true");
+    el.addEventListener("dragstart", (e) => {
+      draggedItemData = {
+        block: el.getAttribute("data-block"),
+        texture: el.getAttribute("data-texture"),
+        color: el.getAttribute("data-color"),
+        code: el.getAttribute("data-code")
+      };
+    });
   });
-}
 
-function stopSimulation() {
-  currentMode = "build";
-  isPlaying = false;
-  leftSidePressed = false;
-  rightSidePressed = false;
-  const playBtn = document.getElementById("btn-play");
-  playBtn.textContent = "▶";
-  playBtn.classList.remove("playing");
-  document.getElementById("play-controls").classList.add("hidden");
-  document.getElementById("sidebar").classList.remove("closed");
-  document.getElementById("editor-topbar").classList.remove("expanded");
+  const container = document.getElementById("canvas-container");
+  container.addEventListener("dragover", (e) => e.preventDefault());
+  container.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (!draggedItemData || currentMode === "play") return;
 
-  blocks.forEach((b) => {
-    if (b.flameMesh) b.flameMesh.visible = false;
-    b.body.velocity.set(0, 0, 0);
-    b.body.angularVelocity.set(0, 0, 0);
-    b.body.type = CANNON.Body.STATIC;
-    b.mesh.position.copy(b.initialPos);
-    b.mesh.quaternion.copy(b.initialQuat);
-    b.syncTransformToBody();
+    const rect = container.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(blocks.map(b => b.mesh));
+
+    if (intersects.length > 0) {
+      const found = blocks.find(b => b.mesh === intersects[0].object);
+      if (found) {
+        if (draggedItemData.texture) {
+          found.setTexture(draggedItemData.texture);
+        } else if (draggedItemData.color) {
+          found.setColor(draggedItemData.color);
+        }
+      }
+    } else if (draggedItemData.block) {
+      const newB = new Block(draggedItemData.block, 0, 1.0, 0);
+      newB.syncTransformToBody();
+    }
+    draggedItemData = null;
+  });
+
+  // Arrastar código para o slot de programação de qualquer objeto selecionado
+  const slotEvent = document.getElementById("slot-event");
+  slotEvent.addEventListener("dragover", (e) => e.preventDefault());
+  slotEvent.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (draggedItemData && draggedItemData.code && selectedBlock) {
+      selectedBlock.setProgramCode(draggedItemData.code);
+      updateProgrammingPanel(selectedBlock);
+    }
+    draggedItemData = null;
   });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  init3D();
+  setTimeout(init3D, 50);
 
   document.getElementById("btn-play").addEventListener("click", () => {
-    if (currentMode === "build") startSimulation();
-    else stopSimulation();
-  });
-
-  document.getElementById("btn-toggle-sidebar").addEventListener("click", () => {
-    document.getElementById("sidebar").classList.toggle("closed");
-    document.getElementById("editor-topbar").classList.toggle("expanded");
-  });
-
-  document.querySelectorAll("[data-block]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (currentMode !== "build") return;
-      const type = btn.getAttribute("data-block");
-      const yPos = type === "dude" || type === "alien" ? 1.15 : 0.5;
-      const offset = (blocks.length % 4) * 0.6;
-      const b = new Block(type, offset, yPos, 0);
-      b.syncTransformToBody();
-    });
-  });
-
-  document.querySelectorAll("[data-color]").forEach((swatch) => {
-    swatch.addEventListener("click", () => {
-      if (!selectedBlock) return;
-      selectedBlock.setColor(swatch.getAttribute("data-color"));
-    });
-  });
-
-  document.querySelectorAll("[data-texture]").forEach((tex) => {
-    tex.addEventListener("click", () => {
-      if (!selectedBlock) return;
-      const name = tex.getAttribute("data-texture");
-      if (name === "metal") {
-        selectedBlock.setColor(0xb8b8b8);
-        selectedBlock.mesh.material.metalness = 0.8;
-        selectedBlock.mesh.material.roughness = 0.2;
-      } else if (name === "wood") {
-        selectedBlock.setColor(0xb5651d);
-        selectedBlock.mesh.material.metalness = 0.05;
-        selectedBlock.mesh.material.roughness = 0.85;
-      } else if (name === "brick") {
-        selectedBlock.setColor(0xa52a2a);
-        selectedBlock.mesh.material.metalness = 0.05;
-        selectedBlock.mesh.material.roughness = 0.9;
-      } else if (name === "carbon") {
-        selectedBlock.setColor(0x262626);
-        selectedBlock.mesh.material.metalness = 0.5;
-        selectedBlock.mesh.material.roughness = 0.35;
-      }
-    });
-  });
-
-  document.querySelectorAll("[data-code]").forEach((tile) => {
-    tile.addEventListener("click", () => {
-      if (selectedBlock && selectedBlock.isRocket) {
-        selectedBlock.isProgrammed = true;
-        updateProgrammingPanel(selectedBlock);
-      }
-    });
-  });
-
-  document.getElementById("slot-event").addEventListener("click", () => {
-    if (selectedBlock && selectedBlock.isRocket) {
-      selectedBlock.isProgrammed = true;
-      updateProgrammingPanel(selectedBlock);
+    if (currentMode === "build") {
+      currentMode = "play"; isPlaying = true; deselectBlock();
+      document.getElementById("btn-play").textContent = "■";
+      document.getElementById("left-dock").classList.add("hidden-play");
+      document.getElementById("play-left-touch-area").classList.remove("hidden");
+      blocks.forEach((b) => {
+        b.syncTransformToBody();
+        if (b.body.mass > 0) { b.body.type = CANNON.Body.DYNAMIC; b.body.wakeUp(); }
+      });
+    } else {
+      currentMode = "build"; isPlaying = false; leftSidePressed = false;
+      document.getElementById("btn-play").textContent = "▶";
+      document.getElementById("left-dock").classList.remove("hidden-play");
+      document.getElementById("play-left-touch-area").classList.add("hidden");
+      blocks.forEach((b) => {
+        if (b.flameMesh) b.flameMesh.visible = false;
+        b.body.velocity.set(0, 0, 0); b.body.angularVelocity.set(0, 0, 0);
+        b.body.type = CANNON.Body.STATIC;
+        b.mesh.position.copy(b.initialPos); b.mesh.quaternion.copy(b.initialQuat);
+        b.syncTransformToBody();
+      });
     }
-  });
-
-  document.getElementById("btn-close-prog").addEventListener("click", () => {
-    document.getElementById("programming-panel").classList.add("hidden");
   });
 
   document.getElementById("btn-rotate").addEventListener("click", () => {
     if (!selectedBlock) return;
     selectedBlock.mesh.rotation.y += Math.PI / 2;
     selectedBlock.syncTransformToBody();
+    saveCurrentWorld();
   });
 
   document.getElementById("btn-delete").addEventListener("click", () => {
     if (selectedBlock) selectedBlock.remove();
   });
 
-  const touchLeft = document.getElementById("touch-left");
-  const touchRight = document.getElementById("touch-right");
+  document.addEventListener("pointerdown", (event) => {
+    if (currentMode === "play") return;
+    if (event.clientX < 190 || event.target.closest("#left-dock") || event.target.closest(".editor-top-right") || event.target.closest(".bw-block-gizmo")) {
+      return;
+    }
 
+    const container = document.getElementById("canvas-container");
+    const rect = container.getBoundingClientRect();
+    
+    mouse.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(blocks.map((b) => b.mesh));
+    
+    if (intersects.length > 0) {
+      const foundBlock = blocks.find((b) => b.mesh === intersects[0].object);
+      if (foundBlock) {
+        selectBlock(foundBlock);
+        isDraggingBlock = true;
+        dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), foundBlock.mesh.position);
+        const intersectPoint = new THREE.Vector3();
+        raycaster.ray.intersectPlane(dragPlane, intersectPoint);
+        dragOffset.copy(foundBlock.mesh.position).sub(intersectPoint);
+      }
+    } else {
+      deselectBlock();
+    }
+  });
+
+  document.addEventListener("pointermove", (event) => {
+    if (!isDraggingBlock || !selectedBlock || currentMode === "play") return;
+    const container = document.getElementById("canvas-container");
+    const rect = container.getBoundingClientRect();
+    
+    mouse.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const intersectPoint = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(dragPlane, intersectPoint)) {
+      const target = intersectPoint.add(dragOffset);
+      selectedBlock.mesh.position.x = Math.round(target.x * 2) / 2;
+      selectedBlock.mesh.position.z = Math.round(target.z * 2) / 2;
+      selectedBlock.syncTransformToBody();
+      updateOverlayPositions();
+    }
+  });
+
+  document.addEventListener("pointerup", () => {
+    if (isDraggingBlock) {
+      isDraggingBlock = false;
+      saveCurrentWorld();
+    }
+  });
+
+  const touchLeft = document.getElementById("play-left-touch-area");
   touchLeft.addEventListener("pointerdown", () => { leftSidePressed = true; });
   touchLeft.addEventListener("pointerup", () => { leftSidePressed = false; });
   touchLeft.addEventListener("pointerleave", () => { leftSidePressed = false; });
-
-  touchRight.addEventListener("pointerdown", () => { rightSidePressed = true; });
-  touchRight.addEventListener("pointerup", () => { rightSidePressed = false; });
-  touchRight.addEventListener("pointerleave", () => { rightSidePressed = false; });
 });

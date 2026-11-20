@@ -20,95 +20,110 @@
     <div id="screen-editor" class="screen">
       <div id="canvas-container"></div>
 
-      <!-- Top Bar Circular Buttons -->
-      <div class="editor-topbar" id="editor-topbar">
-        <a href="index.html" class="bw-circle-btn" title="Home">🏠</a>
-        <button class="bw-circle-btn" id="btn-toggle-sidebar" title="Drawer">☰</button>
-        <button class="bw-circle-btn play-btn" id="btn-play" title="Play / Stop">▶</button>
+      <div class="editor-top-right">
+        <a href="index.html" class="bw-round-icon" title="Back to Menu">⬇</a>
+        <button class="bw-round-icon" id="btn-play" title="Play / Stop">▶</button>
       </div>
 
-      <!-- Gaveta Lateral Direita (idêntica ao vídeo) -->
-      <div id="sidebar" class="bw-drawer">
-        <div class="drawer-section-title">Blocks</div>
-        <div class="orange-blocks-tray">
-          <button class="block-icon-card" data-block="cube">
-            <span class="ico">🟥</span><span class="lbl">CUBE</span>
-          </button>
-          <button class="block-icon-card" data-block="wedge">
-            <span class="ico">◢</span><span class="lbl">WEDGE</span>
-          </button>
-          <button class="block-icon-card" data-block="rocket">
-            <span class="ico">🚀</span><span class="lbl">ROCKET</span>
-          </button>
-          <button class="block-icon-card" data-block="wheel">
-            <span class="ico">🛞</span><span class="lbl">WHEEL</span>
-          </button>
-          <button class="block-icon-card" data-block="jump">
-            <span class="ico">📐</span><span class="lbl">JUMP</span>
-          </button>
+      <div id="left-dock" class="left-dock">
+        <!-- Bandeja Laranja de Blocos sem barras extras -->
+        <div class="orange-blocks-panel">
+          <div class="blocks-grid-4">
+            <button class="bw-shape-btn" draggable="true" data-block="rocket" title="Rocket">
+              <svg viewBox="0 0 24 24"><path d="M12 2L17 12H7L12 2ZM9 12V19H15V12"/></svg>
+            </button>
+            <button class="bw-shape-btn" draggable="true" data-block="wheel" title="Wheel">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="bw-shape-btn" draggable="true" data-block="wedge" title="Wedge">
+              <svg viewBox="0 0 24 24"><polygon points="5,19 19,19 5,6"/></svg>
+            </button>
+            <button class="bw-shape-btn" draggable="true" data-block="cube" title="Cube">
+              <svg viewBox="0 0 24 24"><polygon points="12,3 20,8 20,16 12,21 4,16 4,8"/><polyline points="4,8 12,13 20,8"/><line x1="12" y1="13" x2="12" y2="21"/></svg>
+            </button>
+            <button class="bw-shape-btn" draggable="true" data-block="jump" title="Ramp">
+              <svg viewBox="0 0 24 24"><polygon points="3,18 21,18 21,9"/></svg>
+            </button>
+            <button class="bw-shape-btn" draggable="true" data-block="cylinder" title="Cylinder">
+              <svg viewBox="0 0 24 24"><ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7V17C5 18.6 8.1 20 12 20C15.9 20 19 18.6 19 17V7"/></svg>
+            </button>
+            <button class="bw-shape-btn" draggable="true" data-block="slope" title="Slope">
+              <svg viewBox="0 0 24 24"><polygon points="4,18 20,18 12,7"/></svg>
+            </button>
+            <button class="bw-shape-btn" draggable="true" data-block="block" title="Block">
+              <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+            </button>
+          </div>
         </div>
 
-        <div class="drawer-section-title">Colors</div>
-        <div class="colors-4x4">
-          <div class="swatch-btn" data-color="#e62e2e" style="background:#e62e2e;"></div>
-          <div class="swatch-btn" data-color="#ff8c1a" style="background:#ff8c1a;"></div>
-          <div class="swatch-btn" data-color="#ffd633" style="background:#ffd633;"></div>
-          <div class="swatch-btn" data-color="#33cc33" style="background:#33cc33;"></div>
-          <div class="swatch-btn" data-color="#33bbff" style="background:#33bbff;"></div>
-          <div class="swatch-btn" data-color="#1e73be" style="background:#1e73be;"></div>
-          <div class="swatch-btn" data-color="#9933ff" style="background:#9933ff;"></div>
-          <div class="swatch-btn" data-color="#ffffff" style="background:#ffffff;"></div>
+        <!-- Cores 4x4 -->
+        <div class="colors-matrix-4x4">
+          <div class="color-cell" data-color="#ffaa00" style="background:#ffaa00;"></div>
+          <div class="color-cell" data-color="#ff3b1f" style="background:#ff3b1f;"></div>
+          <div class="color-cell" data-color="#7a7a7a" style="background:#7a7a7a;"></div>
+          <div class="color-cell" data-color="#222222" style="background:#222222;"></div>
+          <div class="color-cell" data-color="#ffe600" style="background:#ffe600;"></div>
+          <div class="color-cell" data-color="#ff9933" style="background:#ff9933;"></div>
+          <div class="color-cell" data-color="#b5b5b5" style="background:#b5b5b5;"></div>
+          <div class="color-cell" data-color="#ffffff" style="background:#ffffff;"></div>
+          <div class="color-cell" data-color="#33cc33" style="background:#33cc33;"></div>
+          <div class="color-cell" data-color="#ff55cc" style="background:#ff55cc;"></div>
+          <div class="color-cell" data-color="#1a8cff" style="background:#1a8cff;"></div>
+          <div class="color-cell" data-color="#8844ff" style="background:#8844ff;"></div>
+          <div class="color-cell" data-color="#99ff66" style="background:#99ff66;"></div>
+          <div class="color-cell" data-color="#ffb3e6" style="background:#ffb3e6;"></div>
+          <div class="color-cell" data-color="#80d4ff" style="background:#80d4ff;"></div>
+          <div class="color-cell" data-color="#d9b3ff" style="background:#d9b3ff;"></div>
         </div>
 
-        <div class="drawer-section-title">Textures</div>
-        <div class="textures-4x1">
-          <div class="tex-btn" data-texture="metal" style="background:linear-gradient(135deg,#bbb,#777);">MTL</div>
-          <div class="tex-btn" data-texture="wood" style="background:linear-gradient(135deg,#c97a32,#8f4c14);">WOD</div>
-          <div class="tex-btn" data-texture="brick" style="background:linear-gradient(135deg,#b83b3b,#7d1f1f);">BRK</div>
-          <div class="tex-btn" data-texture="carbon" style="background:linear-gradient(135deg,#3a3a3a,#161616);">CRB</div>
+        <!-- Texturas e Rostos -->
+        <div class="textures-chars-panel">
+          <div class="tex-grid-4x2">
+            <div class="tex-tile" draggable="true" data-texture="wood" style="background:#9e5b34;" title="Wood">W</div>
+            <div class="tex-tile" draggable="true" data-texture="brick" style="background:#b35c44;" title="Brick">B</div>
+            <div class="tex-tile" draggable="true" data-texture="metal" style="background:#8a5a44;" title="Metal">M</div>
+            <div class="tex-tile" draggable="true" data-texture="carbon" style="background:#333333;" title="Carbon">C</div>
+          </div>
+          <div class="chars-grid-4">
+            <div class="char-face-tile" draggable="true" data-texture="face_dude" style="background:#f2b89b;" title="Dude"><span style="font-size:10px;">• •</span><span style="font-size:7px;">DUDE</span></div>
+            <div class="char-face-tile" draggable="true" data-texture="face_boy" style="background:#f2b89b;" title="Boy"><span style="font-size:10px;">• • Ɐ</span><span style="font-size:7px;">BOY</span></div>
+            <div class="char-face-tile" draggable="true" data-texture="face_cat" style="background:#f2b89b;" title="Cat"><span style="font-size:10px;">=^=</span><span style="font-size:7px;">CAT</span></div>
+            <div class="char-face-tile" draggable="true" data-texture="face_eye" style="background:#f2b89b;" title="Face"><span style="font-size:11px;">👁️</span><span style="font-size:7px;">FACE</span></div>
+          </div>
         </div>
 
-        <div class="drawer-section-title">Characters</div>
-        <div class="chars-2x1">
-          <button class="char-card" data-block="dude">👤 Dude</button>
-          <button class="char-card" data-block="alien">👽 Alien</button>
-        </div>
-
-        <div class="drawer-section-title">Programming</div>
-        <div class="code-tiles-stack">
-          <div class="bw-code-block action-orange" data-code="FIRE">FIRE</div>
-          <div class="bw-code-block event-blue" data-code="TAP LEFT">TAP LEFT</div>
-          <div class="bw-code-block event-blue" data-code="TAP RIGHT">TAP RIGHT</div>
+        <!-- Programação -->
+        <div class="programming-tiles-drawer">
+          <div class="code-grid-4">
+            <div class="mini-code-tile orange" draggable="true" data-code="FIRE"><span class="ico">🔥</span><span>FIRE</span></div>
+            <div class="mini-code-tile orange" draggable="true" data-code="SPIN"><span class="ico">⚙️</span><span>SPIN</span></div>
+            <div class="mini-code-tile orange" draggable="true" data-code="BOOST"><span class="ico">🚀</span><span>GO</span></div>
+            <div class="mini-code-tile orange" draggable="true" data-code="STOP"><span class="ico">⏹</span><span>STOP</span></div>
+          </div>
+          <div class="code-grid-4">
+            <div class="mini-code-tile blue" draggable="true" data-code="TAP LEFT"><span class="ico">👈</span><span>LEFT</span></div>
+            <div class="mini-code-tile blue" draggable="true" data-code="TAP RIGHT"><span class="ico">👉</span><span>RIGHT</span></div>
+            <div class="mini-code-tile blue" draggable="true" data-code="TAP UP"><span class="ico">👆</span><span>TAP</span></div>
+            <div class="mini-code-tile blue" draggable="true" data-code="TILT"><span class="ico">📱</span><span>TILT</span></div>
+          </div>
         </div>
       </div>
 
-      <!-- Gizmo Flutuante -->
-      <div id="floating-gizmo" class="floating-gizmo hidden">
-        <button class="gizmo-circle rotate" id="btn-rotate">↻</button>
-        <button class="gizmo-circle delete" id="btn-delete">✕</button>
+      <div id="bw-block-gizmo" class="bw-block-gizmo hidden">
+        <button class="gizmo-action" id="btn-delete" title="Delete">✕</button>
+        <button class="gizmo-action" id="btn-rotate" title="Rotate">↻</button>
       </div>
 
-      <!-- Painel Visual WHEN -> THEN do Foguete -->
-      <div id="programming-panel" class="prog-overlay-card hidden">
-        <h4>ROCKET LOGIC</h4>
-        <div class="prog-rule-row">
-          <span class="prog-keyword">WHEN</span>
-          <div class="prog-slot-box" id="slot-event">Tap to assign TAP LEFT</div>
+<div id="rocket-logic-popup" class="rocket-logic-popup hidden">
+        <div class="logic-row">
+          <div class="logic-slot" id="slot-event" title="Arraste um evento azul aqui">▶</div>
+          <div class="logic-slot filled" id="slot-action" style="background:#ff661a;"><span class="ico">🚀</span><span style="font-size:6px;">FIRE</span></div>
         </div>
-        <div class="prog-rule-row">
-          <span class="prog-keyword">THEN</span>
-          <div class="prog-slot-box filled-orange">FIRE</div>
+      </div>
         </div>
-        <button class="bw-pill-btn" id="btn-close-prog" style="padding: 5px 12px; font-size: 11px; margin-top: 2px;">Done</button>
       </div>
 
-      <!-- Controles de Toque no Modo Play -->
-      <div id="play-controls" class="hidden">
-        <div class="bw-touch-pad" id="touch-left">TAP<br>LEFT</div>
-        <div class="bw-touch-pad" id="touch-right">TAP<br>RIGHT</div>
-      </div>
-
-      <div class="hud-status-pill">Tap block to select • Drag on ground to move</div>
+      <div id="play-left-touch-area" class="hidden" title="Hold Left Side"></div>
     </div>
   </div>
 

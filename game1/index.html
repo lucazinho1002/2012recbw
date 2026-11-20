@@ -16,53 +16,43 @@
 
   <div id="app-container">
     <div id="screen-menu" class="screen">
-      <!-- Lateral Esquerda com título vertical BLOCKSWORLD -->
-      <div class="menu-sidebar-brand">
+      <div class="menu-brand-col">
         <div class="vertical-brand-text">BLOCKSWORLD</div>
-        <div class="brand-sub">Pre-E3 2012</div>
       </div>
 
-      <!-- Grade Central de Mundos com Arte Isométrica -->
-      <div class="menu-worlds-area">
-        <div class="section-caption">Featured Worlds</div>
-        <div class="world-cards-grid">
-          <a href="editor.html?world=rocket" class="world-preview-tile">
-            <div class="tile-scene-art art-rocket">
-              <div class="mini-cube-red">
-                <div class="mini-rocket-body"></div>
-              </div>
-            </div>
-            <div class="tile-footer-label">Rocket Demo</div>
-          </a>
-
-          <a href="editor.html?world=car" class="world-preview-tile">
-            <div class="tile-scene-art art-car">
-              <div class="mini-car-body">
-                <div class="mini-wheel" style="left: 4px;"></div>
-                <div class="mini-wheel" style="right: 4px;"></div>
-              </div>
-            </div>
-            <div class="tile-footer-label">Car &amp; Jump</div>
-          </a>
-
-          <a href="editor.html?world=empty" class="world-preview-tile">
-            <div class="tile-scene-art art-sandbox">
-              <span style="font-size: 30px; margin-top: 10px;">🧱</span>
-            </div>
-            <div class="tile-footer-label">Blank World</div>
-          </a>
-        </div>
+      <div class="menu-scroll-columns" id="featured-worlds-grid">
+        <!-- 8 mundos em destaque -->
+        <a href="editor.html?world=rocket" class="world-thumb-card"><div class="thumb-art-center">🚀</div><div class="thumb-label">Rocket Test</div></a>
+        <a href="editor.html?world=car" class="world-thumb-card"><div class="thumb-art-center">🏎️</div><div class="thumb-label">Car &amp; Jump</div></a>
+        <a href="editor.html?world=alien" class="world-thumb-card"><div class="thumb-art-center">👤</div><div class="thumb-label">Characters</div></a>
+        <a href="editor.html?world=tower" class="world-thumb-card"><div class="thumb-art-center">🗼</div><div class="thumb-label">Tower Fall</div></a>
+        <a href="editor.html?world=airplane" class="world-thumb-card"><div class="thumb-art-center">✈️</div><div class="thumb-label">Flight</div></a>
+        <a href="editor.html?world=boat" class="world-thumb-card"><div class="thumb-art-center">⛵</div><div class="thumb-label">Ocean Wave</div></a>
+        <a href="editor.html?world=castle" class="world-thumb-card"><div class="thumb-art-center">🏰</div><div class="thumb-label">Castle Siege</div></a>
+        <a href="editor.html?world=empty" class="world-thumb-card"><div class="thumb-art-center">🧱</div><div class="thumb-label">Empty Grid</div></a>
       </div>
 
-      <!-- 5 Botões em Pílula à Direita (idênticos ao vídeo) -->
-      <div class="menu-actions-col">
-        <a href="editor.html?world=rocket" class="bw-pill-btn primary">Get Started</a>
-        <a href="editor.html?world=empty" class="bw-pill-btn">New World</a>
+      <div class="menu-buttons-col">
+        <a href="editor.html?world=rocket" class="bw-pill-btn">Get Started</a>
+        <button id="btn-create-new-world" class="bw-pill-btn">New World</button>
         <a href="worlds.html" class="bw-pill-btn">My Worlds</a>
-        <a href="worlds2.html" class="bw-pill-btn">Other Worlds</a>
+        <a href="other-worlds.html" class="bw-pill-btn">Other Worlds</a>
         <a href="settings.html" class="bw-pill-btn">Settings</a>
       </div>
     </div>
   </div>
+
+  <script>
+    document.getElementById("btn-create-new-world").addEventListener("click", () => {
+      const worldName = prompt("Digite o nome do novo mundo:", "My Awesome World");
+      if (!worldName) return;
+      const newId = "world_" + Date.now();
+      let savedWorlds = JSON.parse(localStorage.getItem("bw_my_worlds") || "[]");
+      savedWorlds.push({ id: newId, name: worldName });
+      localStorage.setItem("bw_my_worlds", JSON.stringify(savedWorlds));
+      localStorage.setItem(`bw_world_${newId}`, JSON.stringify([]));
+      window.location.href = `editor.html?world=${newId}`;
+    });
+  </script>
 </body>
 </html>

@@ -22,6 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
     statusMsg.textContent = "Settings saved!";
     setTimeout(() => {
       statusMsg.textContent = "";
-    }, 2200);
+    }, 2000);
   });
 });

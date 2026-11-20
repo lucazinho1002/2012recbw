@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2012recbw - Other Versions</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Barra Superior */
+        .top-bar {
+            background-color: #2c2c2c;
+            height: 45px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #444;
+        }
+
+        .top-bar .logo {
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        .top-bar a {
+            color: #66b2ff;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .top-bar a:hover {
+            text-decoration: underline;
+            color: #99ccff;
+        }
+
+        /* Conteúdo e Lista */
+        .content {
+            max-width: 700px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .content h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .version-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .version-item {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 6px;
+        }
+
+        .version-item a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 18px;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .version-item a:hover {
+            background-color: #262626;
+            color: #66b2ff;
+        }
+
+        .version-tag {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background-color: #2c2c2c;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar">
+        <div class="logo">2012recbw</div>
+        <a href="index.html">return</a>
+    </header>
+
+    <main class="content">
+        <h1>Other Versions</h1>
+        <ul class="version-list">
+            <li class="version-item">
+                <a href="game/index.html">
+                    <span>1.0</span>
+                </a>
+            </li>
+            <li class="version-item">
+                <a href="game1/index.html">
+                    <span>1.1 beta</span>
+                </a>
+            </li>
+        </ul>
+    </main>
+
+</body>
+</html>

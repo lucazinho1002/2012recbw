@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Creative Builder 3D</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #000000;
+      display: flex;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Left Sidebar (Build Mode) */
+    #build-sidebar {
+      height: 100%;
+      width: 28%;
+      min-width: 230px;
+      max-width: 310px;
+      background-color: #000000;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14px;
+      z-index: 20;
+      flex-shrink: 0;
+      overflow-y: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    #build-sidebar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .sidebar-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #a3a3a3;
+      margin-bottom: 6px;
+      letter-spacing: 0.025em;
+    }
+
+    #behaviors-section {
+      padding-top: 4px;
+    }
+
+    .sidebar-footer {
+      padding-top: 12px;
+      border-top: 1px solid #171717;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #737373;
+    }
+
+    #btn-audio-toggle {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: none;
+      background-color: #171717;
+      color: #d4d4d4;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+    #btn-audio-toggle:hover {
+      background-color: #262626;
+    }
+
+    /* Primitive Tile Button */
+    .prim-btn {
+      background-color: #f2541b;
+      border-radius: 7px;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition: transform 0.1s ease, filter 0.12s ease;
+      position: relative;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    }
+    .prim-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+    .prim-btn:active {
+      cursor: grabbing;
+      transform: scale(0.95);
+    }
+
+    /* Color Swatch Tile */
+    .color-tile {
+      border-radius: 7px;
+      aspect-ratio: 1 / 1;
+      position: relative;
+      cursor: grab;
+      transition: transform 0.1s ease, box-shadow 0.12s ease;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .color-tile:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+    }
+    .color-tile:active {
+      cursor: grabbing;
+      transform: scale(0.96);
+    }
+    .color-tile-label {
+      position: absolute;
+      top: 5px;
+      left: 6px;
+      font-size: 9px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.75);
+      pointer-events: none;
+    }
+
+    /* Behavior Tile */
+    .behavior-tile {
+      border-radius: 7px;
+      aspect-ratio: 1 / 1;
+      padding: 6px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      text-align: left;
+      font-size: 11px;
+      line-height: 1.15;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: grab;
+      transition: transform 0.1s ease, filter 0.12s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+    .behavior-tile:hover {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+    }
+    .behavior-tile:active {
+      cursor: grabbing;
+      transform: scale(0.95);
+    }
+    .behavior-trigger {
+      background-color: #1e73e8;
+    }
+    .behavior-action {
+      background-color: #f2541b;
+    }
+
+    /* 3D Viewport Container */
+    #viewport-container {
+      position: relative;
+      flex: 1 1 0%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #game-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    /* Top-Left Demo Rocket Bar */
+    #build-top-left-bar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #btn-demo-rocket {
+      padding: 6px 12px;
+      border-radius: 9999px;
+      background-color: rgba(0, 0, 0, 0.55);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+    #btn-demo-rocket:hover {
+      background-color: rgba(0, 0, 0, 0.78);
+    }
+    #btn-demo-rocket:active {
+      transform: scale(0.96);
+    }
+
+    /* Top-Right Circular HUD Buttons */
+    #top-right-hud {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-circle-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 9999px;
+      border: 2.5px solid #ffffff;
+      background: rgba(15, 23, 42, 0.18);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.15s ease;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+      padding: 0;
+    }
+    .hud-circle-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
+      transform: scale(1.06);
+    }
+    .hud-circle-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Play Mode Touch Controls Overlay */
+    #play-touch-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+    }
+
+    .touch-zone-half {
+      width: 50%;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      padding: 20px;
+      pointer-events: none;
+      transition: opacity 0.2s ease, background 0.15s ease;
+    }
+    #touch-left-zone {
+      justify-content: flex-start;
+    }
+    #touch-right-zone {
+      justify-content: flex-end;
+    }
+
+    .touch-badge {
+      padding: 6px 12px;
+      border-radius: 9999px;
+      background-color: rgba(37, 99, 235, 0.8);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+      transition: transform 0.1s ease, background-color 0.1s ease;
+    }
+
+    /* Floating Object Inspector Popup */
+    #inspector-popup {
+      position: absolute;
+      z-index: 40;
+      background: rgba(12, 12, 12, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(6px);
+      transition: opacity 0.12s ease;
+      min-width: 166px;
+    }
+
+    #insp-delete {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 24px;
+      height: 24px;
+      border-radius: 9999px;
+      background-color: #dc2626;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+    #insp-delete:hover {
+      background-color: #ef4444;
+    }
+
+    .insp-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #insp-sockets-list {
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .insp-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 7px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, filter 0.12s ease;
+      position: relative;
+      font-weight: 700;
+      color: #fff;
+      padding: 0;
+    }
+    .insp-btn:hover {
+      filter: brightness(1.12);
+    }
+    .insp-btn:active {
+      transform: scale(0.94);
+    }
+
+    .insp-orange {
+      background-color: #f2541b;
+    }
+
+    .insp-color-bordered {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .insp-color-label {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-size: 9px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+      pointer-events: none;
+    }
+
+    /* Socket Slots inside Inspector */
+    .socket-trigger {
+      width: 46px;
+      height: 46px;
+      border-radius: 7px;
+      background-color: #1e73e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      font-size: 9.5px;
+      line-height: 1.1;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: filter 0.12s ease, transform 0.1s ease;
+    }
+    .socket-trigger.empty {
+      background-color: #1964ca;
+      opacity: 0.92;
+    }
+    .socket-action {
+      width: 46px;
+      height: 46px;
+      border-radius: 7px;
+      background-color: #f2541b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      font-size: 9.5px;
+      line-height: 1.1;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: filter 0.12s ease, transform 0.1s ease;
+    }
+    .socket-action.empty {
+      background-color: rgba(242, 84, 27, 0.25);
+      border: 1.5px dashed rgba(242, 84, 27, 0.7);
+      color: rgba(255,255,255,0.55);
+    }
+    .socket-plus {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.6;
+    }
+    .socket-highlight {
+      box-shadow: 0 0 0 2.5px #ffffff !important;
+      transform: scale(1.05);
+    }
+
+    /* Toast Message Box */
+    #toast-msg {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      background-color: rgba(23, 23, 23, 0.92);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    /* Drag Ghost Pill */
+    #drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 100;
+      transform: translate(-50%, -50%);
+      display: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      border: 1.5px solid rgba(255,255,255,0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT SIDEBAR (BUILD MODE ONLY) -->
+  <aside id="build-sidebar">
+    <div class="sidebar-sections">
+      <!-- PRIMITIVES PALETTE (2 Rows) -->
+      <div>
+        <div class="palette-grid">
+          <!-- 1. Cube -->
+          <div class="prim-btn" data-prim="cube" title="Cube (Drag onto island or click)">
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round">
+              <polygon points="20,6 33,13.5 20,21 7,13.5" fill="rgba(255,255,255,0.12)"/>
+              <polygon points="7,13.5 20,21 20,35 7,27.5" fill="rgba(255,255,255,0.05)"/>
+              <polygon points="33,13.5 20,21 20,35 33,27.5" fill="rgba(0,0,0,0.08)"/>
+            </svg>
+          </div>
+          <!-- 2. Wedge -->
+          <div class="prim-btn" data-prim="wedge" title="Wedge Slope (Drag onto island or click)">
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round">
+              <polygon points="22,8 33,14 20,33 7,26" fill="rgba(255,255,255,0.14)"/>
+              <polygon points="22,8 33,14 33,27 20,33" fill="rgba(0,0,0,0.08)"/>
+              <line x1="7" y1="26" x2="20" y2="33"/>
+            </svg>
+          </div>
+          <!-- 3. Corner -->
+          <div class="prim-btn" data-prim="corner" title="Corner Pyramid (Drag onto island or click)">
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round">
+              <polygon points="20,7 33,27 20,34 7,27" fill="rgba(255,255,255,0.12)"/>
+              <line x1="20" y1="7" x2="20" y2="34"/>
+            </svg>
+          </div>
+          <!-- 4. Wheel -->
+          <div class="prim-btn" data-prim="wheel" title="Wheel (Drag onto island or click)">
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round">
+              <ellipse cx="17" cy="21" rx="8" ry="11" fill="rgba(255,255,255,0.12)"/>
+              <path d="M17,10 L24,10 C28.5,10 32,14.9 32,21 C32,27.1 28.5,32 24,32 L17,32" />
+              <ellipse cx="17" cy="21" rx="3.5" ry="5" />
+            </svg>
+          </div>
+          <!-- Row 2: 5. Cone (Thruster) -->
+          <div class="prim-btn" data-prim="cone" title="Rocket Thruster Cone (Drag onto island or click)">
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round">
+              <path d="M20,7 L31,28 C31,31 26,33.5 20,33.5 C14,33.5 9,31 9,28 Z" fill="rgba(255,255,255,0.12)"/>
+              <path d="M9,28 C9,25.5 14,23.5 20,23.5 C26,23.5 31,25.5 31,28" stroke-opacity="0.45"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLOR PALETTE (2x4 Grid) -->
+      <div>
+        <div class="section-label">Color</div>
+        <div id="color-palette-grid" class="palette-grid">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- CONTEXTUAL BEHAVIORS PALETTE -->
+      <div id="behaviors-section" class="hidden">
+        <div id="behaviors-grid" class="palette-grid">
+          <!-- Populated dynamically when Cone or Wheel is selected -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Subtle Helper Footer -->
+    <div class="sidebar-footer">
+      <span id="status-hint">Drag parts onto island</span>
+      <button id="btn-audio-toggle" type="button" title="Toggle Synth Beat & Thruster Audio">
+        🔊 Sound
+      </button>
+    </div>
+  </aside>
+
+  <!-- 3D VIEWPORT CONTAINER -->
+  <main id="viewport-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- TOP-RIGHT CIRCULAR HUD BUTTONS -->
+    <div id="top-right-hud">
+      <!-- Build Mode: Reset/Clear Button (Downward Arrow in Circle) -->
+      <button id="btn-clear-all" type="button" class="hud-circle-btn" title="Clear / Reset Island">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="6" x2="12" y2="17"></line>
+          <polyline points="7 13 12 18 17 13"></polyline>
+        </svg>
+      </button>
+
+      <!-- Build Mode: Play Button (Triangle in Circle) -->
+      <button id="btn-play" type="button" class="hud-circle-btn" title="Start Physics Simulation (Play)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="8,5 20,12 8,19"></polygon>
+        </svg>
+      </button>
+
+      <!-- Play Mode: Pause / Stop Button (Two Vertical Bars in Circle) -->
+      <button id="btn-stop" type="button" class="hud-circle-btn hidden" title="Stop Simulation & Return to Build Mode">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6.5" y="5" width="3.8" height="14" rx="1"></rect>
+          <rect x="13.7" y="5" width="3.8" height="14" rx="1"></rect>
+        </svg>
+      </button>
+    </div>
+
+    <!-- PLAY MODE TOUCH CONTROLS OVERLAY (LEFT / RIGHT HALF INDICATORS) -->
+    <div id="play-touch-overlay" class="hidden">
+      <div id="touch-left-zone" class="touch-zone-half">
+        <div id="badge-touch-left" class="touch-badge hidden">
+          ◀ Touch Left (A / ←)
+        </div>
+      </div>
+      <div id="touch-right-zone" class="touch-zone-half">
+        <div id="badge-touch-right" class="touch-badge hidden">
+          Touch Right (D / →) ▶
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOATING DARK OBJECT INSPECTOR POPUP -->
+    <div id="inspector-popup" class="hidden">
+      <!-- Delete Part Mini Button -->
+      <button id="insp-delete" type="button" title="Delete Part (Del)">
+        ×
+      </button>
+
+      <!-- Row 1: Move, Rotate, Color -->
+      <div class="insp-row">
+        <!-- Move Tool -->
+        <div id="insp-move" class="insp-btn insp-orange" style="cursor: grab;" title="Drag to move part on grid">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="5 9 2 12 5 15"></polyline>
+            <polyline points="9 5 12 2 15 5"></polyline>
+            <polyline points="15 19 12 22 9 19"></polyline>
+            <polyline points="19 9 22 12 19 15"></polyline>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <line x1="12" y1="2" x2="12" y2="22"></line>
+          </svg>
+        </div>
+
+        <!-- Rotate Tool -->
+        <button id="insp-rotate" type="button" class="insp-btn insp-orange" title="Click: Rotate 90° Yaw | Shift+Click / Double-Click: Tilt/Flip">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path>
+            <polyline points="21 3 21 8 16 8"></polyline>
+          </svg>
+        </button>
+
+        <!-- Color Tile -->
+        <div id="insp-color" class="insp-btn insp-color-bordered" title="Drop a color here or click to cycle color / Shift+Click for Glass">
+          <span class="insp-color-label">Color</span>
+        </div>
+      </div>
+
+      <!-- Row 2+: Behavior Sockets Container (for Cones & Wheels) -->
+      <div id="insp-sockets-list" class="hidden"></div>
+    </div>
+
+    <!-- Custom Toast Message Box -->
+    <div id="toast-msg"></div>
+  </main>
+
+  <!-- Floating Drag Ghost -->
+  <div id="drag-ghost"></div>
+
+  <script>
+    /**
+     * CREATIVE BUILDER 3D
+     * Complete 3D Sandbox Building & Physics Simulation
+     * Error-free initialization, zero external CSS CDN warnings, complete physics & UI.
+     */
+
+    // =========================================================================
+    // 1. TOP-LEVEL STATE, MAPS, TIMERS & PALETTE DEFINITIONS (HOISTED SAFELY)
+    // =========================================================================
+    let toastTimeout = null;
+    const activePlayPointers = new Map(); // pointerId -> 'left' | 'right'
+    const keyState = { left: false, right: false };
+    let lastRotateTap = 0;
+    let canvasDownStart = { x: 0, y: 0, hitPartId: null };
+    let physicsWorld = null;
+    let assemblies = [];
+    let smokeParticles = [];
+    let lastTime = performance.now();
+
+    const COLORS = [
+      { id: 'black',      name: 'Black',       hex: '#141414', num: 0x141414 },
+      { id: 'slate',      name: 'Slate Blue',  hex: '#4e6070', num: 0x4e6070 },
+      { id: 'steel',      name: 'Steel Blue',  hex: '#93accb', num: 0x93accb },
+      { id: 'orange',     name: 'Orange',      hex: '#f26d1b', num: 0xf26d1b },
+      { id: 'green',      name: 'Green',       hex: '#1ca638', num: 0x1ca638 },
+      { id: 'royalblue',  name: 'Royal Blue',  hex: '#1e73e8', num: 0x1e73e8 },
+      { id: 'cyan',       name: 'Cyan',        hex: '#42c5f5', num: 0x42c5f5 },
+      { id: 'lavender',   name: 'Lavender',    hex: '#d67ef2', num: 0xd67ef2 }
+    ];
+
+    const BEHAVIORS_BY_TYPE = {
+      cone: {
+        triggers: [
+          { id: 'touch_left', label: 'Touch Left' },
+          { id: 'touch_right', label: 'Touch Right' }
+        ],
+        actions: [
+          { id: 'fire_rocket', label: 'Fire Rocket' }
+        ]
+      },
+      wheel: {
+        triggers: [
+          { id: 'touch_left', label: 'Touch Left' },
+          { id: 'touch_right', label: 'Touch Right' }
+        ],
+        actions: [
+          { id: 'drive_forward', label: 'Drive Forward' },
+          { id: 'drive_backward', label: 'Drive Backward' },
+          { id: 'turn_left', label: 'Turn Left' },
+          { id: 'turn_right', label: 'Turn Right' }
+        ]
+      }
+    };
+
+    const BEHAVIOR_LABELS = {
+      touch_left: 'Touch Left',
+      touch_right: 'Touch Right',
+      fire_rocket: 'Fire Rocket',
+      drive_forward: 'Drive Forward',
+      drive_backward: 'Drive Backward',
+      turn_left: 'Turn Left',
+      turn_right: 'Turn Right'
+    };
+
+    const state = {
+      mode: 'build', // 'build' | 'play'
+      parts: [],     // Array of placed part objects
+      selectedId: null,
+      nextId: 1,
+      touchLeftActive: false,
+      touchRightActive: false,
+      dragState: null, // { kind: 'primitive'|'color'|'behavior'|'movePart', payload: any }
+      pointerDownPos: { x: 0, y: 0 },
+      isOrbiting: false,
+      orbitAngles: { theta: 0.62, phi: 1.04, radius: 15.5 },
+      orbitTarget: new THREE.Vector3(0, 1.3, 0),
+      lastSelectedColorHex: '#f26d1b'
+    };
+
+    // =========================================================================
+    // 2. TOAST NOTIFICATION HELPER
+    // =========================================================================
+    function showToast(msg) {
+      const el = document.getElementById('toast-msg');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.opacity = '1';
+      if (toastTimeout !== null) {
+        clearTimeout(toastTimeout);
+      }
+      toastTimeout = setTimeout(() => {
+        el.style.opacity = '0';
+      }, 2400);
+    }
+
+    // =========================================================================
+    // 3. PROCEDURAL WEB AUDIO (AMBIENT SYNTH PULSE & THRUSTER NOISE)
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.isPlayingMusic = false;
+        this.beatTimer = null;
+        this.step = 0;
+        this.thrusterGain = null;
+        this.thrusterFilter = null;
+      }
+
+      unlock() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          this.ctx = new AudioCtx();
+          this.setupThrusterNoise();
+          this.startAmbientLoop();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      setupThrusterNoise() {
+        if (!this.ctx) return;
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        this.thrusterFilter = this.ctx.createBiquadFilter();
+        this.thrusterFilter.type = 'lowpass';
+        this.thrusterFilter.frequency.value = 340;
+
+        this.thrusterGain = this.ctx.createGain();
+        this.thrusterGain.gain.value = 0.0;
+
+        whiteNoise.connect(this.thrusterFilter);
+        this.thrusterFilter.connect(this.thrusterGain);
+        this.thrusterGain.connect(this.ctx.destination);
+        whiteNoise.start(0);
+      }
+
+      setThrusterIntensity(intensity) {
+        if (!this.ctx || !this.thrusterGain) return;
+        const target = (this.enabled && intensity > 0) ? Math.min(0.16, intensity * 0.11) : 0.0;
+        this.thrusterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.05);
+      }
+
+      playClick(pitch = 520) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(pitch, now);
+        osc.frequency.exponentialRampToValueAtTime(pitch * 0.55, now + 0.06);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.07);
+      }
+
+      playSnap() {
+        this.playClick(380);
+      }
+
+      startAmbientLoop() {
+        if (this.isPlayingMusic) return;
+        this.isPlayingMusic = true;
+        const notes = [130.81, 164.81, 196.00, 164.81, 146.83, 174.61, 220.00, 174.61];
+        this.beatTimer = setInterval(() => {
+          if (!this.enabled || !this.ctx || this.ctx.state !== 'running') return;
+          const now = this.ctx.currentTime;
+          const freq = notes[this.step % notes.length];
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.032, now + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.36);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.38);
+
+          if (this.step % 2 === 1) {
+            const hatOsc = this.ctx.createOscillator();
+            const hatGain = this.ctx.createGain();
+            hatOsc.type = 'square';
+            hatOsc.frequency.setValueAtTime(1200, now);
+            hatGain.gain.setValueAtTime(0.006, now);
+            hatGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+            hatOsc.connect(hatGain);
+            hatGain.connect(this.ctx.destination);
+            hatOsc.start(now);
+            hatOsc.stop(now + 0.035);
+          }
+
+          this.step++;
+        }, 380);
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // =========================================================================
+    // 4. THREE.JS SCENE, SKYBOX, LIGHTING & CHECKERED ISLAND
+    // =========================================================================
+    const canvas = document.getElementById('game-canvas');
+    const viewportContainer = document.getElementById('viewport-container');
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+
+    const scene = new THREE.Scene();
+
+    function createSkyDome() {
+      const skyCanvas = document.createElement('canvas');
+      skyCanvas.width = 1024;
+      skyCanvas.height = 512;
+      const ctx = skyCanvas.getContext('2d');
+
+      const grad = ctx.createLinearGradient(0, 0, 0, 512);
+      grad.addColorStop(0.0, '#3a9bdc');
+      grad.addColorStop(0.45, '#5cb6f0');
+      grad.addColorStop(0.72, '#9ad7ff');
+      grad.addColorStop(1.0, '#7cc6f7');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1024, 512);
+
+      const clouds = [
+        { x: 110, y: 210, r: 58 }, { x: 155, y: 205, r: 68 }, { x: 205, y: 215, r: 52 }, { x: 140, y: 225, r: 48 },
+        { x: 380, y: 195, r: 64 }, { x: 430, y: 185, r: 78 }, { x: 485, y: 198, r: 60 }, { x: 425, y: 212, r: 55 },
+        { x: 680, y: 215, r: 55 }, { x: 730, y: 202, r: 72 }, { x: 785, y: 212, r: 56 },
+        { x: 910, y: 198, r: 62 }, { x: 960, y: 192, r: 70 }, { x: 40,  y: 202, r: 54 }
+      ];
+
+      clouds.forEach(c => {
+        const radGrad = ctx.createRadialGradient(c.x, c.y, c.r * 0.15, c.x, c.y, c.r);
+        radGrad.addColorStop(0, 'rgba(255, 255, 255, 0.72)');
+        radGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.35)');
+        radGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = radGrad;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const tex = new THREE.CanvasTexture(skyCanvas);
+      tex.encoding = THREE.sRGBEncoding;
+      const skyGeo = new THREE.SphereGeometry(140, 32, 24);
+      const skyMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, depthWrite: false });
+      const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+      scene.add(skyMesh);
+    }
+    createSkyDome();
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 300);
+
+    function updateCameraFromOrbit() {
+      const { theta, phi, radius } = state.orbitAngles;
+      camera.position.x = state.orbitTarget.x + radius * Math.sin(phi) * Math.sin(theta);
+      camera.position.y = state.orbitTarget.y + radius * Math.cos(phi);
+      camera.position.z = state.orbitTarget.z + radius * Math.sin(phi) * Math.cos(theta);
+      camera.lookAt(state.orbitTarget);
+    }
+    updateCameraFromOrbit();
+
+    const hemiLight = new THREE.HemisphereLight(0xdff3ff, 0x4f684e, 0.72);
+    hemiLight.position.set(0, 30, 0);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    dirLight.position.set(14, 24, 16);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 2;
+    dirLight.shadow.camera.far = 65;
+    const d = 14;
+    dirLight.shadow.camera.left = -d;
+    dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d;
+    dirLight.shadow.camera.bottom = -d;
+    dirLight.shadow.bias = -0.0005;
+    scene.add(dirLight);
+
+    const backFillLight = new THREE.DirectionalLight(0x9ad7ff, 0.35);
+    backFillLight.position.set(-14, 10, -14);
+    scene.add(backFillLight);
+
+    // =========================================================================
+    // 5. FLOATING CHECKERED ISLAND & COLLISION SURFACES
+    // =========================================================================
+    const islandGroup = new THREE.Group();
+    scene.add(islandGroup);
+
+    const buildSurfaceColliders = [];
+    const unitTileGeo = new THREE.BoxGeometry(0.985, 0.985, 0.985);
+
+    function buildCheckeredIsland() {
+      const tanLightMat = new THREE.MeshStandardMaterial({ color: 0xcbb49c, roughness: 0.78, metalness: 0.04 });
+      const tanDarkMat  = new THREE.MeshStandardMaterial({ color: 0x8c725e, roughness: 0.82, metalness: 0.04 });
+      const grassLightMat = new THREE.MeshStandardMaterial({ color: 0x2ea33b, roughness: 0.75, metalness: 0.04 });
+      const grassDarkMat  = new THREE.MeshStandardMaterial({ color: 0x1b6e24, roughness: 0.80, metalness: 0.04 });
+
+      // 1. Center elevated square platform: 9x9 cells (x: -4..4, z: -4..4), top surface at Y = 0
+      const centerDepth = 7;
+      for (let gx = -4; gx <= 4; gx++) {
+        for (let gz = -4; gz <= 4; gz++) {
+          for (let layer = 0; layer < centerDepth; layer++) {
+            const isOuter = (layer === 0 || gx === -4 || gx === 4 || gz === -4 || gz === 4);
+            if (!isOuter) continue;
+
+            const isEven = ((gx + gz + layer) & 1) === 0;
+            const mat = isEven ? tanLightMat : tanDarkMat;
+            const mesh = new THREE.Mesh(unitTileGeo, mat);
+            mesh.position.set(gx, -0.5 - layer, gz);
+            mesh.receiveShadow = true;
+            if (layer === 0) mesh.castShadow = true;
+            islandGroup.add(mesh);
+          }
+        }
+      }
+
+      const centerPlane = new THREE.Mesh(
+        new THREE.BoxGeometry(9, 0.1, 9),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      centerPlane.position.set(0, -0.05, 0);
+      centerPlane.userData = { isIslandDeck: true, topY: 0, minX: -4, maxX: 4, minZ: -4, maxZ: 4 };
+      scene.add(centerPlane);
+      buildSurfaceColliders.push(centerPlane);
+
+      // 2. Left & Right flanking green grass platforms: 4x6 cells each, top at Y = -1.0
+      const wingDepth = 6;
+      const wings = [
+        { xStart: -8, xEnd: -5, zStart: -3, zEnd: 2 },
+        { xStart:  5, xEnd:  8, zStart: -3, zEnd: 2 }
+      ];
+
+      wings.forEach(w => {
+        for (let gx = w.xStart; gx <= w.xEnd; gx++) {
+          for (let gz = w.zStart; gz <= w.zEnd; gz++) {
+            for (let layer = 0; layer < wingDepth; layer++) {
+              const isOuter = (layer === 0 || gx === w.xStart || gx === w.xEnd || gz === w.zStart || gz === w.zEnd);
+              if (!isOuter) continue;
+
+              const isEven = ((gx + gz + layer) & 1) === 0;
+              const mat = isEven ? grassLightMat : grassDarkMat;
+              const mesh = new THREE.Mesh(unitTileGeo, mat);
+              mesh.position.set(gx, -1.5 - layer, gz);
+              mesh.receiveShadow = true;
+              if (layer === 0) mesh.castShadow = true;
+              islandGroup.add(mesh);
+            }
+          }
+        }
+
+        const wWidth = w.xEnd - w.xStart + 1;
+        const wLength = w.zEnd - w.zStart + 1;
+        const wCenterX = (w.xStart + w.xEnd) / 2;
+        const wCenterZ = (w.zStart + w.zEnd) / 2;
+
+        const wingPlane = new THREE.Mesh(
+          new THREE.BoxGeometry(wWidth, 0.1, wLength),
+          new THREE.MeshBasicMaterial({ visible: false })
+        );
+        wingPlane.position.set(wCenterX, -1.05, wCenterZ);
+        wingPlane.userData = {
+          isIslandDeck: true,
+          topY: -1,
+          minX: w.xStart,
+          maxX: w.xEnd,
+          minZ: w.zStart,
+          maxZ: w.zEnd
+        };
+        scene.add(wingPlane);
+        buildSurfaceColliders.push(wingPlane);
+      });
+    }
+    buildCheckeredIsland();
+
+    const snapGhostMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1.01, 1.01, 1.01),
+      new THREE.MeshBasicMaterial({ color: 0x2ecc71, wireframe: true, transparent: true, opacity: 0.85 })
+    );
+    snapGhostMesh.visible = false;
+    scene.add(snapGhostMesh);
+
+    // =========================================================================
+    // 6. 3D PRIMITIVE GEOMETRIES & PART FACTORY
+    // =========================================================================
+    function createWedgeGeometry() {
+      const shape = new THREE.Shape();
+      shape.moveTo(-0.5, -0.5);
+      shape.lineTo(0.5, -0.5);
+      shape.lineTo(-0.5, 0.5);
+      shape.closePath();
+
+      const geo = new THREE.ExtrudeGeometry(shape, {
+        depth: 1.0,
+        bevelEnabled: false
+      });
+      geo.rotateY(Math.PI / 2);
+      geo.center();
+      return geo;
+    }
+
+    function createCornerGeometry() {
+      const geo = new THREE.BufferGeometry();
+      const pTop = [-0.5,  0.5, -0.5];
+      const b0   = [-0.5, -0.5, -0.5];
+      const b1   = [ 0.5, -0.5, -0.5];
+      const b2   = [ 0.5, -0.5,  0.5];
+      const b3   = [-0.5, -0.5,  0.5];
+
+      const vertices = new Float32Array([
+        ...b0, ...b1, ...b2,
+        ...b0, ...b2, ...b3,
+        ...b0, ...pTop, ...b1,
+        ...b3, ...pTop, ...b0,
+        ...b1, ...pTop, ...b2,
+        ...b2, ...pTop, ...b3
+      ]);
+
+      geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    const GEOMETRIES = {
+      cube:   new THREE.BoxGeometry(1, 1, 1),
+      wedge:  createWedgeGeometry(),
+      corner: createCornerGeometry(),
+      cone:   new THREE.ConeGeometry(0.48, 1.0, 24)
+    };
+
+    function createWheelVisual(material) {
+      const group = new THREE.Group();
+      const tireGeo = new THREE.CylinderGeometry(0.48, 0.48, 0.55, 24);
+      tireGeo.rotateZ(Math.PI / 2);
+      const tireMesh = new THREE.Mesh(tireGeo, material);
+      tireMesh.castShadow = true;
+      tireMesh.receiveShadow = true;
+      group.add(tireMesh);
+
+      const hubGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.58, 16);
+      hubGeo.rotateZ(Math.PI / 2);
+      const hubMat = new THREE.MeshStandardMaterial({ color: 0xd0d7de, roughness: 0.4, metalness: 0.4 });
+      const hubMesh = new THREE.Mesh(hubGeo, hubMat);
+      group.add(hubMesh);
+
+      const lugGeo = new THREE.BoxGeometry(0.60, 0.36, 0.08);
+      const lugMesh = new THREE.Mesh(lugGeo, material);
+      group.add(lugMesh);
+
+      return group;
+    }
+
+    function createPartMaterial(hexColor, isGlass = false) {
+      return new THREE.MeshStandardMaterial({
+        color: new THREE.Color(hexColor),
+        roughness: isGlass ? 0.14 : 0.45,
+        metalness: isGlass ? 0.08 : 0.06,
+        transparent: isGlass,
+        opacity: isGlass ? 0.62 : 1.0
+      });
+    }
+
+    function addPartToScene({ type, x, y, z, colorHex = '#f26d1b', isGlass = false, rotY = 0, rotX = 0, behaviors = null }) {
+      const id = state.nextId++;
+      const mat = createPartMaterial(colorHex, isGlass);
+      let mesh;
+
+      if (type === 'wheel') {
+        mesh = createWheelVisual(mat);
+      } else {
+        mesh = new THREE.Mesh(GEOMETRIES[type], mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+
+      const selBoxGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.03, 1.03, 1.03));
+      const selBoxMat = new THREE.LineBasicMaterial({ color: 0x2ecc71, linewidth: 2 });
+      const selWireframe = new THREE.LineSegments(selBoxGeo, selBoxMat);
+      selWireframe.visible = false;
+      mesh.add(selWireframe);
+
+      const part = {
+        id,
+        type,
+        gridPos: new THREE.Vector3(x, y, z),
+        rotY,
+        rotX,
+        colorHex,
+        isGlass,
+        mesh,
+        material: mat,
+        selWireframe,
+        behaviors: behaviors || ((type === 'cone' || type === 'wheel') ? [{ trigger: null, action: null }] : []),
+        savedTransform: null
+      };
+
+      mesh.userData.partId = id;
+      mesh.traverse(child => {
+        child.userData.partId = id;
+      });
+
+      syncPartTransform(part);
+      scene.add(mesh);
+      state.parts.push(part);
+      return part;
+    }
+
+    function syncPartTransform(part) {
+      part.mesh.position.set(part.gridPos.x, part.gridPos.y + 0.5, part.gridPos.z);
+      part.mesh.rotation.order = 'YXZ';
+      part.mesh.rotation.y = part.rotY;
+      part.mesh.rotation.x = part.rotX;
+      part.mesh.rotation.z = 0;
+    }
+
+    function updatePartAppearance(part) {
+      part.material.color.set(part.colorHex);
+      part.material.transparent = part.isGlass;
+      part.material.opacity = part.isGlass ? 0.62 : 1.0;
+      part.material.roughness = part.isGlass ? 0.14 : 0.45;
+      part.material.needsUpdate = true;
+
+      if (state.selectedId === part.id) {
+        updateInspectorUI();
+      }
+    }
+
+    function deletePartById(id) {
+      const idx = state.parts.findIndex(p => p.id === id);
+      if (idx === -1) return;
+      const part = state.parts[idx];
+      scene.remove(part.mesh);
+      state.parts.splice(idx, 1);
+      if (state.selectedId === id) {
+        selectPart(null);
+      }
+      sound.playClick(260);
+    }
+
+    function clearAllParts() {
+      state.parts.forEach(p => scene.remove(p.mesh));
+      state.parts = [];
+      selectPart(null);
+      sound.playClick(240);
+      showToast('Island cleared');
+    }
+
+    // =========================================================================
+    // 7. DEMO ROCKET PRESET (EXACT 2-THRUSTER ROCKETSHIP FROM THE VIDEO)
+    // =========================================================================
+    function spawnDemoRocket() {
+      if (state.mode !== 'build') return;
+      clearAllParts();
+
+      addPartToScene({ type: 'cube',  x: 0, y: 0, z: 0, colorHex: '#f26d1b', isGlass: false });
+      addPartToScene({ type: 'cube',  x: 0, y: 1, z: 0, colorHex: '#93accb', isGlass: false });
+      addPartToScene({ type: 'cone',  x: 0, y: 2, z: 0, colorHex: '#f26d1b', isGlass: false, behaviors: [{ trigger: null, action: null }] });
+
+      addPartToScene({ type: 'cube',  x: -1, y: 0, z: 0, colorHex: '#1ca638', isGlass: true });
+      addPartToScene({ type: 'cube',  x:  1, y: 0, z: 0, colorHex: '#42c5f5', isGlass: true });
+
+      addPartToScene({ type: 'wedge', x: -1, y: 1, z: 0, colorHex: '#1ca638', isGlass: true, rotY: Math.PI / 2 });
+      addPartToScene({ type: 'wedge', x:  1, y: 1, z: 0, colorHex: '#42c5f5', isGlass: true, rotY: -Math.PI / 2 });
+
+      const leftThruster = addPartToScene({
+        type: 'cone',
+        x: -2, y: 0, z: 0,
+        colorHex: '#f26d1b',
+        isGlass: false,
+        behaviors: [
+          { trigger: 'touch_left', action: 'fire_rocket' }
+        ]
+      });
+
+      addPartToScene({
+        type: 'cone',
+        x: 2, y: 0, z: 0,
+        colorHex: '#f26d1b',
+        isGlass: false,
+        behaviors: [
+          { trigger: 'touch_right', action: 'fire_rocket' }
+        ]
+      });
+
+      selectPart(leftThruster.id);
+      showToast('Demo Rocket loaded! Press ▶ Play and hold Left/Right side of screen.');
+    }
+
+    // =========================================================================
+    // 8. GRID SNAPPING & STACKING HELPERS
+    // =========================================================================
+    function getDeckBaseY(gx, gz) {
+      if (gx >= -4 && gx <= 4 && gz >= -4 && gz <= 4) return 0;
+      if (gx >= -8 && gx <= -5 && gz >= -3 && gz <= 2) return -1;
+      if (gx >= 5 && gx <= 8 && gz >= -3 && gz <= 2) return -1;
+      return null;
+    }
+
+    function computeStackY(gx, gz, ignorePartId = null) {
+      const baseY = getDeckBaseY(gx, gz);
+      if (baseY === null) return null;
+
+      let topY = baseY;
+      for (const p of state.parts) {
+        if (p.id === ignorePartId) continue;
+        if (Math.round(p.gridPos.x) === gx && Math.round(p.gridPos.z) === gz) {
+          topY = Math.max(topY, Math.round(p.gridPos.y) + 1);
+        }
+      }
+      return topY;
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const pointerNDC = new THREE.Vector2();
+
+    function screenToNDC(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    function raycastGridPlacement(clientX, clientY, ignorePartId = null) {
+      screenToNDC(clientX, clientY);
+      raycaster.setFromCamera(pointerNDC, camera);
+
+      const partMeshes = [];
+      for (const p of state.parts) {
+        if (p.id === ignorePartId) continue;
+        partMeshes.push(p.mesh);
+      }
+
+      const partHits = raycaster.intersectObjects(partMeshes, true);
+      if (partHits.length > 0) {
+        const hit = partHits[0];
+        let obj = hit.object;
+        while (obj && obj.userData.partId === undefined) obj = obj.parent;
+        if (obj && obj.userData.partId !== undefined) {
+          const hitPart = state.parts.find(p => p.id === obj.userData.partId);
+          if (hitPart && hit.face) {
+            const worldNormal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).round();
+            const gx = Math.round(hitPart.gridPos.x + worldNormal.x);
+            const gy = Math.round(hitPart.gridPos.y + worldNormal.y);
+            const gz = Math.round(hitPart.gridPos.z + worldNormal.z);
+
+            const deckY = getDeckBaseY(gx, gz);
+            if (deckY !== null && gy >= deckY) {
+              const occupied = state.parts.some(p =>
+                p.id !== ignorePartId &&
+                Math.round(p.gridPos.x) === gx &&
+                Math.round(p.gridPos.y) === gy &&
+                Math.round(p.gridPos.z) === gz
+              );
+              if (!occupied) {
+                return { x: gx, y: gy, z: gz };
+              }
+            }
+          }
+        }
+      }
+
+      const deckHits = raycaster.intersectObjects(buildSurfaceColliders, false);
+      if (deckHits.length > 0) {
+        const pt = deckHits[0].point;
+        const gx = Math.round(pt.x);
+        const gz = Math.round(pt.z);
+        const gy = computeStackY(gx, gz, ignorePartId);
+        if (gy !== null) {
+          return { x: gx, y: gy, z: gz };
+        }
+      }
+
+      return null;
+    }
+
+    function raycastExistingPart(clientX, clientY) {
+      screenToNDC(clientX, clientY);
+      raycaster.setFromCamera(pointerNDC, camera);
+      const meshes = state.parts.map(p => p.mesh);
+      const hits = raycaster.intersectObjects(meshes, true);
+      if (hits.length > 0) {
+        let obj = hits[0].object;
+        while (obj && obj.userData.partId === undefined) obj = obj.parent;
+        if (obj && obj.userData.partId !== undefined) {
+          return state.parts.find(p => p.id === obj.userData.partId) || null;
+        }
+      }
+      return null;
+    }
+
+    // =========================================================================
+    // 9. FLOATING DARK OBJECT INSPECTOR & SIDEBAR PALETTES UI
+    // =========================================================================
+    const inspectorPopup = document.getElementById('inspector-popup');
+    const inspColorBtn = document.getElementById('insp-color');
+    const inspSocketsList = document.getElementById('insp-sockets-list');
+    const behaviorsSection = document.getElementById('behaviors-section');
+    const behaviorsGrid = document.getElementById('behaviors-grid');
+    const colorPaletteGrid = document.getElementById('color-palette-grid');
+    const dragGhost = document.getElementById('drag-ghost');
+
+    // Populate 2x4 Color Palette Grid in Left Sidebar
+    COLORS.forEach(c => {
+      const tile = document.createElement('div');
+      tile.className = 'color-tile';
+      tile.style.backgroundColor = c.hex;
+      tile.title = `${c.name} (Drag onto a part or inspector Color tile; click again for Glass mode)`;
+      tile.innerHTML = `<span class="color-tile-label">Color</span>`;
+
+      tile.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        sound.unlock();
+        startCustomDrag(e, 'color', c, c.hex, 'Color');
+      });
+
+      tile.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.unlock();
+        if (state.selectedId !== null) {
+          const part = state.parts.find(p => p.id === state.selectedId);
+          if (part) {
+            applyColorToPart(part, c.hex);
+          }
+        }
+      });
+
+      colorPaletteGrid.appendChild(tile);
+    });
+
+    // Wire up Primitives Palette drag & click
+    document.querySelectorAll('.prim-btn').forEach(btn => {
+      const primType = btn.dataset.prim;
+      btn.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        sound.unlock();
+        const label = primType.charAt(0).toUpperCase() + primType.slice(1);
+        startCustomDrag(e, 'primitive', primType, '#f2541b', `+ ${label}`);
+      });
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.unlock();
+        const spots = [
+          [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1],
+          [1, 1], [-1, -1], [2, 0], [-2, 0]
+        ];
+        for (const [sx, sz] of spots) {
+          const sy = computeStackY(sx, sz);
+          if (sy !== null && sy < 6) {
+            const newPart = addPartToScene({
+              type: primType,
+              x: sx, y: sy, z: sz,
+              colorHex: state.lastSelectedColorHex
+            });
+            selectPart(newPart.id);
+            sound.playSnap();
+            break;
+          }
+        }
+      });
+    });
+
+    function applyColorToPart(part, hexColor) {
+      if (part.colorHex.toLowerCase() === hexColor.toLowerCase()) {
+        part.isGlass = !part.isGlass;
+        showToast(part.isGlass ? 'Glass transparency ON' : 'Solid material ON');
+      } else {
+        part.colorHex = hexColor;
+        state.lastSelectedColorHex = hexColor;
+      }
+      updatePartAppearance(part);
+      sound.playClick(460);
+    }
+
+    function selectPart(partId) {
+      state.selectedId = partId;
+      state.parts.forEach(p => {
+        p.selWireframe.visible = (p.id === partId && state.mode === 'build');
+      });
+
+      if (partId === null || state.mode !== 'build') {
+        if (inspectorPopup) inspectorPopup.classList.add('hidden');
+        if (behaviorsSection) behaviorsSection.classList.add('hidden');
+        return;
+      }
+
+      updateInspectorUI();
+      updateSidebarBehaviors();
+    }
+
+    function updateSidebarBehaviors() {
+      const part = state.parts.find(p => p.id === state.selectedId);
+      if (!part || !BEHAVIORS_BY_TYPE[part.type]) {
+        behaviorsSection.classList.add('hidden');
+        behaviorsGrid.innerHTML = '';
+        return;
+      }
+
+      behaviorsSection.classList.remove('hidden');
+      behaviorsGrid.innerHTML = '';
+      const def = BEHAVIORS_BY_TYPE[part.type];
+
+      def.triggers.forEach(tr => {
+        const el = document.createElement('div');
+        el.className = 'behavior-tile behavior-trigger';
+        el.textContent = tr.label;
+        el.title = `Drag onto blue trigger socket or click to assign "${tr.label}"`;
+
+        el.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          sound.unlock();
+          startCustomDrag(e, 'behavior', { kind: 'trigger', id: tr.id }, '#1e73e8', tr.label);
+        });
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          sound.unlock();
+          assignBehaviorToSelectedPart('trigger', tr.id);
+        });
+
+        behaviorsGrid.appendChild(el);
+      });
+
+      def.actions.forEach(ac => {
+        const el = document.createElement('div');
+        el.className = 'behavior-tile behavior-action';
+        el.textContent = ac.label;
+        el.title = `Drag onto orange action socket or click to assign "${ac.label}"`;
+
+        el.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          sound.unlock();
+          startCustomDrag(e, 'behavior', { kind: 'action', id: ac.id }, '#f2541b', ac.label);
+        });
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          sound.unlock();
+          assignBehaviorToSelectedPart('action', ac.id);
+        });
+
+        behaviorsGrid.appendChild(el);
+      });
+    }
+
+    function ensureTrailingEmptyBehaviorRow(part) {
+      if (!BEHAVIORS_BY_TYPE[part.type]) return;
+      part.behaviors = part.behaviors.filter((row, idx) =>
+        row.trigger !== null || row.action !== null || idx === part.behaviors.length - 1
+      );
+      const last = part.behaviors[part.behaviors.length - 1];
+      if (!last || last.trigger !== null || last.action !== null) {
+        part.behaviors.push({ trigger: null, action: null });
+      }
+    }
+
+    function assignBehaviorToSelectedPart(kind, behaviorId, targetRowIndex = null) {
+      const part = state.parts.find(p => p.id === state.selectedId);
+      if (!part || !BEHAVIORS_BY_TYPE[part.type]) return;
+
+      ensureTrailingEmptyBehaviorRow(part);
+
+      let rowIdx = targetRowIndex;
+      if (rowIdx === null) {
+        rowIdx = part.behaviors.findIndex(r => r[kind] === null);
+        if (rowIdx === -1) rowIdx = part.behaviors.length - 1;
+      }
+
+      part.behaviors[rowIdx][kind] = behaviorId;
+      ensureTrailingEmptyBehaviorRow(part);
+      updateInspectorUI();
+      sound.playClick(540);
+    }
+
+    function updateInspectorUI() {
+      const part = state.parts.find(p => p.id === state.selectedId);
+      if (!part || state.mode !== 'build') {
+        inspectorPopup.classList.add('hidden');
+        return;
+      }
+
+      inspectorPopup.classList.remove('hidden');
+
+      inspColorBtn.style.backgroundColor = part.colorHex;
+      inspColorBtn.style.opacity = part.isGlass ? '0.68' : '1.0';
+      inspColorBtn.style.boxShadow = part.isGlass ? 'inset 0 0 0 2px rgba(255,255,255,0.65)' : 'none';
+
+      if (BEHAVIORS_BY_TYPE[part.type]) {
+        ensureTrailingEmptyBehaviorRow(part);
+        inspSocketsList.classList.remove('hidden');
+        inspSocketsList.innerHTML = '';
+
+        part.behaviors.forEach((row, idx) => {
+          const rowEl = document.createElement('div');
+          rowEl.className = 'insp-row';
+
+          // Blue Trigger Socket
+          const trigEl = document.createElement('div');
+          trigEl.className = `socket-trigger ${row.trigger ? '' : 'empty'}`;
+          trigEl.dataset.socketKind = 'trigger';
+          trigEl.dataset.rowIdx = idx;
+
+          if (row.trigger) {
+            trigEl.textContent = BEHAVIOR_LABELS[row.trigger];
+            trigEl.title = 'Click to clear trigger';
+            trigEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              row.trigger = null;
+              ensureTrailingEmptyBehaviorRow(part);
+              updateInspectorUI();
+              sound.playClick(320);
+            });
+          } else {
+            trigEl.innerHTML = `
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+                <circle cx="12" cy="12" r="8" stroke-opacity="0.85"></circle>
+                <circle cx="12" cy="12" r="3" fill="#ffffff"></circle>
+              </svg>
+            `;
+            trigEl.title = 'Drop Touch Left / Touch Right here';
+          }
+
+          // Orange Action Socket
+          const actEl = document.createElement('div');
+          actEl.className = `socket-action ${row.action ? '' : 'empty'}`;
+          actEl.dataset.socketKind = 'action';
+          actEl.dataset.rowIdx = idx;
+
+          if (row.action) {
+            actEl.textContent = BEHAVIOR_LABELS[row.action];
+            actEl.title = 'Click to clear action';
+            actEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              row.action = null;
+              ensureTrailingEmptyBehaviorRow(part);
+              updateInspectorUI();
+              sound.playClick(320);
+            });
+          } else {
+            actEl.innerHTML = `<span class="socket-plus">+</span>`;
+            actEl.title = 'Drop Action (e.g. Fire Rocket / Drive Forward) here';
+          }
+
+          rowEl.appendChild(trigEl);
+          rowEl.appendChild(actEl);
+          inspSocketsList.appendChild(rowEl);
+        });
+      } else {
+        inspSocketsList.classList.add('hidden');
+        inspSocketsList.innerHTML = '';
+      }
+
+      positionInspectorPopup();
+    }
+
+    function positionInspectorPopup() {
+      const part = state.parts.find(p => p.id === state.selectedId);
+      if (!part || inspectorPopup.classList.contains('hidden')) return;
+
+      const worldPos = part.mesh.position.clone();
+      worldPos.project(camera);
+
+      const rect = viewportContainer.getBoundingClientRect();
+      const screenX = (worldPos.x * 0.5 + 0.5) * rect.width;
+      const screenY = (-worldPos.y * 0.5 + 0.5) * rect.height;
+
+      const popW = inspectorPopup.offsetWidth || 170;
+      const popH = inspectorPopup.offsetHeight || 115;
+
+      let left = screenX + 26;
+      let top = screenY - 12;
+
+      if (left + popW > rect.width - 14) {
+        left = screenX - popW - 26;
+      }
+      left = Math.max(12, Math.min(rect.width - popW - 12, left));
+      top = Math.max(62, Math.min(rect.height - popH - 14, top));
+
+      inspectorPopup.style.left = `${left}px`;
+      inspectorPopup.style.top = `${top}px`;
+    }
+
+    // Inspector Row 1 Button Handlers (with safe null checks)
+    const inspDeleteBtn = document.getElementById('insp-delete');
+    if (inspDeleteBtn) {
+      inspDeleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (state.selectedId !== null) deletePartById(state.selectedId);
+      });
+    }
+
+    const inspMoveBtn = document.getElementById('insp-move');
+    if (inspMoveBtn) {
+      inspMoveBtn.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        sound.unlock();
+        const part = state.parts.find(p => p.id === state.selectedId);
+        if (!part) return;
+        startCustomDrag(e, 'movePart', part.id, '#f2541b', 'Move');
+      });
+    }
+
+    const inspRotateBtn = document.getElementById('insp-rotate');
+    if (inspRotateBtn) {
+      inspRotateBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.unlock();
+        const part = state.parts.find(p => p.id === state.selectedId);
+        if (!part) return;
+
+        const now = Date.now();
+        const isDoubleTap = (now - lastRotateTap) < 280;
+        lastRotateTap = now;
+
+        if (e.shiftKey || isDoubleTap) {
+          part.rotX = (part.rotX + Math.PI / 2) % (Math.PI * 2);
+        } else {
+          part.rotY = (part.rotY + Math.PI / 2) % (Math.PI * 2);
+        }
+        syncPartTransform(part);
+        sound.playClick(490);
+      });
+    }
+
+    if (inspColorBtn) {
+      inspColorBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sound.unlock();
+        const part = state.parts.find(p => p.id === state.selectedId);
+        if (!part) return;
+
+        if (e.shiftKey) {
+          part.isGlass = !part.isGlass;
+        } else {
+          const curIdx = COLORS.findIndex(c => c.hex.toLowerCase() === part.colorHex.toLowerCase());
+          const nextColor = COLORS[(curIdx + 1) % COLORS.length];
+          part.colorHex = nextColor.hex;
+          state.lastSelectedColorHex = nextColor.hex;
+        }
+        updatePartAppearance(part);
+        sound.playClick(460);
+      });
+    }
+
+    // =========================================================================
+    // 10. UNIFIED DRAG-AND-DROP & VIEWPORT ORBIT INTERACTION
+    // =========================================================================
+    function startCustomDrag(e, kind, payload, badgeColor, badgeText) {
+      state.dragState = { kind, payload, moved: false, startX: e.clientX, startY: e.clientY };
+      dragGhost.style.backgroundColor = badgeColor;
+      dragGhost.textContent = badgeText;
+      dragGhost.style.left = `${e.clientX}px`;
+      dragGhost.style.top = `${e.clientY}px`;
+    }
+
+    window.addEventListener('pointermove', (e) => {
+      if (state.dragState) {
+        const dx = e.clientX - state.dragState.startX;
+        const dy = e.clientY - state.dragState.startY;
+        if (Math.hypot(dx, dy) > 4) {
+          state.dragState.moved = true;
+          if (state.dragState.kind !== 'movePart') {
+            dragGhost.style.display = 'block';
+          }
+        }
+
+        dragGhost.style.left = `${e.clientX}px`;
+        dragGhost.style.top = `${e.clientY}px`;
+
+        document.querySelectorAll('.socket-highlight').forEach(el => el.classList.remove('socket-highlight'));
+        if (inspColorBtn) inspColorBtn.classList.remove('socket-highlight');
+
+        if (state.dragState.kind === 'primitive') {
+          const snap = raycastGridPlacement(e.clientX, e.clientY);
+          if (snap) {
+            snapGhostMesh.visible = true;
+            snapGhostMesh.position.set(snap.x, snap.y + 0.5, snap.z);
+          } else {
+            snapGhostMesh.visible = false;
+          }
+        } else if (state.dragState.kind === 'movePart') {
+          const partId = state.dragState.payload;
+          const part = state.parts.find(p => p.id === partId);
+          if (part && state.dragState.moved) {
+            const snap = raycastGridPlacement(e.clientX, e.clientY, partId);
+            if (snap) {
+              part.gridPos.set(snap.x, snap.y, snap.z);
+              syncPartTransform(part);
+              positionInspectorPopup();
+            }
+          }
+        } else if (state.dragState.kind === 'color') {
+          const elUnder = document.elementFromPoint(e.clientX, e.clientY);
+          if (elUnder && inspColorBtn && (elUnder === inspColorBtn || inspColorBtn.contains(elUnder))) {
+            inspColorBtn.classList.add('socket-highlight');
+          }
+        } else if (state.dragState.kind === 'behavior') {
+          const elUnder = document.elementFromPoint(e.clientX, e.clientY);
+          const socketEl = elUnder ? elUnder.closest('[data-socket-kind]') : null;
+          if (socketEl && socketEl.dataset.socketKind === state.dragState.payload.kind) {
+            socketEl.classList.add('socket-highlight');
+          }
+        }
+        return;
+      }
+
+      if (state.isOrbiting && state.mode === 'build') {
+        const deltaX = e.clientX - state.pointerDownPos.x;
+        const deltaY = e.clientY - state.pointerDownPos.y;
+        state.pointerDownPos = { x: e.clientX, y: e.clientY };
+
+        state.orbitAngles.theta -= deltaX * 0.0075;
+        state.orbitAngles.phi = Math.max(0.22, Math.min(1.42, state.orbitAngles.phi - deltaY * 0.0075));
+        updateCameraFromOrbit();
+        positionInspectorPopup();
+      }
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      if (state.dragState) {
+        const ds = state.dragState;
+        state.dragState = null;
+        dragGhost.style.display = 'none';
+        snapGhostMesh.visible = false;
+        document.querySelectorAll('.socket-highlight').forEach(el => el.classList.remove('socket-highlight'));
+        if (inspColorBtn) inspColorBtn.classList.remove('socket-highlight');
+
+        if (!ds.moved) return;
+
+        if (ds.kind === 'primitive') {
+          const snap = raycastGridPlacement(e.clientX, e.clientY);
+          if (snap) {
+            const newPart = addPartToScene({
+              type: ds.payload,
+              x: snap.x,
+              y: snap.y,
+              z: snap.z,
+              colorHex: state.lastSelectedColorHex
+            });
+            selectPart(newPart.id);
+            sound.playSnap();
+          }
+        } else if (ds.kind === 'movePart') {
+          sound.playSnap();
+        } else if (ds.kind === 'color') {
+          const elUnder = document.elementFromPoint(e.clientX, e.clientY);
+          if (elUnder && inspColorBtn && (elUnder === inspColorBtn || inspColorBtn.contains(elUnder))) {
+            const selPart = state.parts.find(p => p.id === state.selectedId);
+            if (selPart) applyColorToPart(selPart, ds.payload.hex);
+          } else {
+            const hitPart = raycastExistingPart(e.clientX, e.clientY);
+            if (hitPart) {
+              selectPart(hitPart.id);
+              applyColorToPart(hitPart, ds.payload.hex);
+            }
+          }
+        } else if (ds.kind === 'behavior') {
+          const elUnder = document.elementFromPoint(e.clientX, e.clientY);
+          const socketEl = elUnder ? elUnder.closest('[data-socket-kind]') : null;
+          if (socketEl && socketEl.dataset.socketKind === ds.payload.kind) {
+            const rowIdx = parseInt(socketEl.dataset.rowIdx, 10);
+            assignBehaviorToSelectedPart(ds.payload.kind, ds.payload.id, rowIdx);
+          }
+        }
+        return;
+      }
+
+      if (state.isOrbiting) {
+        state.isOrbiting = false;
+      }
+    });
+
+    canvas.addEventListener('pointerdown', (e) => {
+      sound.unlock();
+
+      if (state.mode === 'play') {
+        handlePlayPointerDown(e);
+        return;
+      }
+
+      canvasDownStart = { x: e.clientX, y: e.clientY, hitPartId: null };
+      const hitPart = raycastExistingPart(e.clientX, e.clientY);
+
+      if (hitPart) {
+        canvasDownStart.hitPartId = hitPart.id;
+        if (state.selectedId === hitPart.id) {
+          startCustomDrag(e, 'movePart', hitPart.id, '#f2541b', 'Move');
+        } else {
+          selectPart(hitPart.id);
+          sound.playClick(440);
+        }
+      } else {
+        state.isOrbiting = true;
+        state.pointerDownPos = { x: e.clientX, y: e.clientY };
+      }
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      if (state.mode === 'play') {
+        handlePlayPointerUp(e);
+        return;
+      }
+      const dist = Math.hypot(e.clientX - canvasDownStart.x, e.clientY - canvasDownStart.y);
+      if (dist < 5 && canvasDownStart.hitPartId === null) {
+        selectPart(null);
+      }
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+      if (state.mode !== 'build') return;
+      e.preventDefault();
+      state.orbitAngles.radius = Math.max(7.5, Math.min(28, state.orbitAngles.radius + e.deltaY * 0.01));
+      updateCameraFromOrbit();
+      positionInspectorPopup();
+    }, { passive: false });
+
+    // =========================================================================
+    // 11. PLAY MODE: AUTO-GLUING & CANNON.JS RIGID-BODY PHYSICS SIMULATION
+    // =========================================================================
+    const smokeGeo = new THREE.SphereGeometry(0.24, 10, 10);
+
+    function initPhysicsWorld() {
+      physicsWorld = new CANNON.World();
+      physicsWorld.gravity.set(0, -14.5, 0);
+      physicsWorld.broadphase = new CANNON.NaiveBroadphase();
+      physicsWorld.solver.iterations = 12;
+
+      const groundMat = new CANNON.Material('ground');
+      const partMat = new CANNON.Material('part');
+      const contactMat = new CANNON.ContactMaterial(groundMat, partMat, {
+        friction: 0.45,
+        restitution: 0.12
+      });
+      physicsWorld.addContactMaterial(contactMat);
+
+      const centerBody = new CANNON.Body({ mass: 0, material: groundMat });
+      centerBody.addShape(new CANNON.Box(new CANNON.Vec3(4.5, 3.5, 4.5)));
+      centerBody.position.set(0, -3.5, 0);
+      physicsWorld.addBody(centerBody);
+
+      const leftBody = new CANNON.Body({ mass: 0, material: groundMat });
+      leftBody.addShape(new CANNON.Box(new CANNON.Vec3(2.0, 3.0, 3.0)));
+      leftBody.position.set(-6.5, -4.0, -0.5);
+      physicsWorld.addBody(leftBody);
+
+      const rightBody = new CANNON.Body({ mass: 0, material: groundMat });
+      rightBody.addShape(new CANNON.Box(new CANNON.Vec3(2.0, 3.0, 3.0)));
+      rightBody.position.set(6.5, -4.0, -0.5);
+      physicsWorld.addBody(rightBody);
+
+      return partMat;
+    }
+
+    function buildGluedAssemblies(partMat) {
+      const visited = new Set();
+      const groups = [];
+
+      for (const part of state.parts) {
+        if (visited.has(part.id)) continue;
+        const comp = [];
+        const queue = [part];
+        visited.add(part.id);
+
+        while (queue.length > 0) {
+          const curr = queue.shift();
+          comp.push(curr);
+
+          for (const other of state.parts) {
+            if (visited.has(other.id)) continue;
+            const dist = curr.mesh.position.distanceTo(other.mesh.position);
+            if (dist <= 1.05) {
+              visited.add(other.id);
+              queue.push(other);
+            }
+          }
+        }
+        groups.push(comp);
+      }
+
+      assemblies = groups.map(comp => {
+        const com = new THREE.Vector3();
+        comp.forEach(p => com.add(p.mesh.position));
+        com.divideScalar(comp.length);
+
+        const body = new CANNON.Body({
+          mass: comp.length * 1.4,
+          material: partMat,
+          linearDamping: 0.08,
+          angularDamping: 0.18
+        });
+        body.position.set(com.x, com.y, com.z);
+
+        const partBindings = comp.map(p => {
+          const localOffset = p.mesh.position.clone().sub(com);
+          const localQuat = p.mesh.quaternion.clone();
+
+          const halfExt = p.type === 'wheel'
+            ? new CANNON.Vec3(0.28, 0.48, 0.48)
+            : new CANNON.Vec3(0.49, 0.49, 0.49);
+
+          body.addShape(
+            new CANNON.Box(halfExt),
+            new CANNON.Vec3(localOffset.x, localOffset.y, localOffset.z),
+            new CANNON.Quaternion(localQuat.x, localQuat.y, localQuat.z, localQuat.w)
+          );
+
+          return {
+            part: p,
+            localOffset,
+            localQuat,
+            wheelSpinAngle: 0
+          };
+        });
+
+        physicsWorld.addBody(body);
+        return { body, partBindings };
+      });
+    }
+
+    function spawnSmokePuff(worldPos, dirVec) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.85
+      });
+      const mesh = new THREE.Mesh(smokeGeo, mat);
+      mesh.position.copy(worldPos);
+      mesh.position.x += (Math.random() - 0.5) * 0.22;
+      mesh.position.z += (Math.random() - 0.5) * 0.22;
+      const scale = 0.65 + Math.random() * 0.55;
+      mesh.scale.setScalar(scale);
+      scene.add(mesh);
+
+      smokeParticles.push({
+        mesh,
+        vel: dirVec.clone().multiplyScalar(2.4 + Math.random() * 1.5).add(
+          new THREE.Vector3((Math.random() - 0.5) * 0.9, (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.9)
+        ),
+        age: 0,
+        maxAge: 0.55 + Math.random() * 0.25
+      });
+    }
+
+    function updateSmokeParticles(dt) {
+      for (let i = smokeParticles.length - 1; i >= 0; i--) {
+        const sp = smokeParticles[i];
+        sp.age += dt;
+        if (sp.age >= sp.maxAge) {
+          scene.remove(sp.mesh);
+          sp.mesh.material.dispose();
+          smokeParticles.splice(i, 1);
+          continue;
+        }
+        const t = sp.age / sp.maxAge;
+        sp.mesh.position.addScaledVector(sp.vel, dt);
+        sp.mesh.scale.setScalar(0.75 + t * 1.85);
+        sp.mesh.material.opacity = 0.85 * (1 - t);
+      }
+    }
+
+    function clearSmokeParticles() {
+      smokeParticles.forEach(sp => {
+        scene.remove(sp.mesh);
+        sp.mesh.material.dispose();
+      });
+      smokeParticles = [];
+    }
+
+    function isBehaviorRowActive(row) {
+      if (!row.action) return false;
+      if (!row.trigger) return true;
+      if (row.trigger === 'touch_left' && state.touchLeftActive) return true;
+      if (row.trigger === 'touch_right' && state.touchRightActive) return true;
+      return false;
+    }
+
+    function stepSimulation(dt) {
+      if (!physicsWorld) return;
+
+      let activeThrusterCount = 0;
+
+      for (const asm of assemblies) {
+        const body = asm.body;
+        const bodyPos = new THREE.Vector3(body.position.x, body.position.y, body.position.z);
+        const bodyQuat = new THREE.Quaternion(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+
+        for (const item of asm.partBindings) {
+          const part = item.part;
+          if (!part.behaviors || part.behaviors.length === 0) continue;
+
+          const worldOffset = item.localOffset.clone().applyQuaternion(bodyQuat);
+          const partWorldPos = bodyPos.clone().add(worldOffset);
+          const partWorldQuat = bodyQuat.clone().multiply(item.localQuat);
+
+          for (const row of part.behaviors) {
+            if (!isBehaviorRowActive(row)) continue;
+
+            if (part.type === 'cone' && row.action === 'fire_rocket') {
+              activeThrusterCount++;
+              const thrustDir = new THREE.Vector3(0, 1, 0).applyQuaternion(partWorldQuat).normalize();
+              const thrustMag = 24.5;
+              const force = thrustDir.clone().multiplyScalar(thrustMag);
+
+              body.applyForce(
+                new CANNON.Vec3(force.x, force.y, force.z),
+                new CANNON.Vec3(worldOffset.x, worldOffset.y, worldOffset.z)
+              );
+
+              if (Math.random() < 0.75) {
+                const nozzlePos = partWorldPos.clone().addScaledVector(thrustDir, -0.52);
+                spawnSmokePuff(nozzlePos, thrustDir.clone().negate());
+              }
+            }
+
+            if (part.type === 'wheel') {
+              const isGrounded = partWorldPos.y <= 1.25;
+              const forwardDir = new THREE.Vector3(0, 0, 1).applyQuaternion(partWorldQuat).normalize();
+              const driveForce = 18.0;
+
+              if (row.action === 'drive_forward') {
+                item.wheelSpinAngle += dt * 10;
+                if (isGrounded) {
+                  body.applyForce(
+                    new CANNON.Vec3(forwardDir.x * driveForce, 0, forwardDir.z * driveForce),
+                    new CANNON.Vec3(worldOffset.x, worldOffset.y, worldOffset.z)
+                  );
+                }
+              } else if (row.action === 'drive_backward') {
+                item.wheelSpinAngle -= dt * 10;
+                if (isGrounded) {
+                  body.applyForce(
+                    new CANNON.Vec3(-forwardDir.x * driveForce, 0, -forwardDir.z * driveForce),
+                    new CANNON.Vec3(worldOffset.x, worldOffset.y, worldOffset.z)
+                  );
+                }
+              } else if (row.action === 'turn_left') {
+                body.torque.y += 14.0;
+              } else if (row.action === 'turn_right') {
+                body.torque.y -= 14.0;
+              }
+            }
+          }
+        }
+      }
+
+      sound.setThrusterIntensity(activeThrusterCount);
+      physicsWorld.step(1 / 60, dt, 3);
+
+      for (const asm of assemblies) {
+        const body = asm.body;
+        const bodyPos = new THREE.Vector3(body.position.x, body.position.y, body.position.z);
+        const bodyQuat = new THREE.Quaternion(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+
+        for (const item of asm.partBindings) {
+          const worldOffset = item.localOffset.clone().applyQuaternion(bodyQuat);
+          item.part.mesh.position.copy(bodyPos).add(worldOffset);
+          item.part.mesh.quaternion.copy(bodyQuat).multiply(item.localQuat);
+
+          if (item.part.type === 'wheel' && item.wheelSpinAngle !== 0) {
+            item.part.mesh.rotateX(item.wheelSpinAngle);
+          }
+        }
+      }
+
+      if (assemblies.length > 0) {
+        const mainBody = assemblies[0].body;
+        const targetPos = new THREE.Vector3(
+          mainBody.position.x * 0.55,
+          Math.max(1.3, mainBody.position.y * 0.65 + 1.0),
+          mainBody.position.z * 0.55
+        );
+        state.orbitTarget.lerp(targetPos, 0.06);
+        updateCameraFromOrbit();
+      }
+    }
+
+    // =========================================================================
+    // 12. MODE SWITCHING (BUILD MODE <-> PLAY MODE)
+    // =========================================================================
+    const buildSidebar = document.getElementById('build-sidebar');
+    const buildTopLeftBar = document.getElementById('build-top-left-bar');
+    const btnClearAll = document.getElementById('btn-clear-all');
+    const btnPlay = document.getElementById('btn-play');
+    const btnStop = document.getElementById('btn-stop');
+    const btnDemoRocket = document.getElementById('btn-demo-rocket');
+    const btnAudioToggle = document.getElementById('btn-audio-toggle');
+    const playTouchOverlay = document.getElementById('play-touch-overlay');
+    const badgeTouchLeft = document.getElementById('badge-touch-left');
+    const badgeTouchRight = document.getElementById('badge-touch-right');
+
+    function enterPlayMode() {
+
+      sound.unlock();
+      sound.playClick(620);
+
+      state.parts.forEach(p => {
+        p.savedTransform = {
+          gridPos: p.gridPos.clone(),
+          rotY: p.rotY,
+          rotX: p.rotX
+        };
+        p.selWireframe.visible = false;
+      });
+
+      state.mode = 'play';
+      if (inspectorPopup) inspectorPopup.classList.add('hidden');
+      if (buildSidebar) buildSidebar.classList.add('hidden');
+      if (buildTopLeftBar) buildTopLeftBar.classList.add('hidden');
+      if (btnClearAll) btnClearAll.classList.add('hidden');
+      if (btnPlay) btnPlay.classList.add('hidden');
+      if (btnStop) btnStop.classList.remove('hidden');
+      if (playTouchOverlay) playTouchOverlay.classList.remove('hidden');
+
+      const usesLeft = state.parts.some(p => p.behaviors.some(b => b.trigger === 'touch_left' && b.action));
+      const usesRight = state.parts.some(p => p.behaviors.some(b => b.trigger === 'touch_right' && b.action));
+      if (badgeTouchLeft) badgeTouchLeft.classList.toggle('hidden', !usesLeft);
+      if (badgeTouchRight) badgeTouchRight.classList.toggle('hidden', !usesRight);
+
+      handleResize();
+
+      const partMat = initPhysicsWorld();
+      buildGluedAssemblies(partMat);
+    }
+
+    function exitPlayMode() {
+      sound.playClick(380);
+      sound.setThrusterIntensity(0);
+
+      state.mode = 'build';
+      state.touchLeftActive = false;
+      state.touchRightActive = false;
+      activePlayPointers.clear();
+      physicsWorld = null;
+      assemblies = [];
+      clearSmokeParticles();
+
+      state.parts.forEach(p => {
+        if (p.savedTransform) {
+          p.gridPos.copy(p.savedTransform.gridPos);
+          p.rotY = p.savedTransform.rotY;
+          p.rotX = p.savedTransform.rotX;
+          syncPartTransform(p);
+        }
+      });
+
+      state.orbitTarget.set(0, 1.3, 0);
+      updateCameraFromOrbit();
+
+      if (buildSidebar) buildSidebar.classList.remove('hidden');
+      if (buildTopLeftBar) buildTopLeftBar.classList.remove('hidden');
+      if (btnClearAll) btnClearAll.classList.remove('hidden');
+      if (btnPlay) btnPlay.classList.remove('hidden');
+      if (btnStop) btnStop.classList.add('hidden');
+      if (playTouchOverlay) playTouchOverlay.classList.add('hidden');
+
+      handleResize();
+
+      if (state.selectedId !== null) {
+        selectPart(state.selectedId);
+      }
+    }
+
+    if (btnPlay) btnPlay.addEventListener('click', enterPlayMode);
+    if (btnStop) btnStop.addEventListener('click', exitPlayMode);
+    if (btnClearAll) {
+      btnClearAll.addEventListener('click', () => {
+        sound.unlock();
+        clearAllParts();
+      });
+    }
+    if (btnDemoRocket) {
+      btnDemoRocket.addEventListener('click', () => {
+        sound.unlock();
+        spawnDemoRocket();
+      });
+    }
+    if (btnAudioToggle) {
+      btnAudioToggle.addEventListener('click', () => {
+        sound.unlock();
+        sound.enabled = !sound.enabled;
+        if (!sound.enabled) sound.setThrusterIntensity(0);
+        btnAudioToggle.textContent = sound.enabled ? '🔊 Sound' : '🔇 Muted';
+      });
+    }
+
+    // =========================================================================
+    // 13. PLAY MODE SCREEN TOUCH & KEYBOARD CONTROLS (A/D, ARROWS)
+    // =========================================================================
+    function syncTouchStates() {
+      let left = false;
+      let right = false;
+      for (const side of activePlayPointers.values()) {
+        if (side === 'left') left = true;
+        if (side === 'right') right = true;
+      }
+      state.touchLeftActive = left || keyState.left;
+      state.touchRightActive = right || keyState.right;
+
+      if (badgeTouchLeft) {
+        badgeTouchLeft.style.transform = state.touchLeftActive ? 'scale(1.08)' : 'scale(1)';
+        badgeTouchLeft.style.backgroundColor = state.touchLeftActive ? 'rgba(30, 115, 232, 1)' : '';
+      }
+      if (badgeTouchRight) {
+        badgeTouchRight.style.transform = state.touchRightActive ? 'scale(1.08)' : 'scale(1)';
+        badgeTouchRight.style.backgroundColor = state.touchRightActive ? 'rgba(30, 115, 232, 1)' : '';
+      }
+    }
+
+    function handlePlayPointerDown(e) {
+      const side = e.clientX < window.innerWidth / 2 ? 'left' : 'right';
+      activePlayPointers.set(e.pointerId, side);
+      syncTouchStates();
+    }
+
+    function handlePlayPointerUp(e) {
+      activePlayPointers.delete(e.pointerId);
+      syncTouchStates();
+    }
+
+    window.addEventListener('pointercancel', (e) => {
+      activePlayPointers.delete(e.pointerId);
+      syncTouchStates();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
+        keyState.left = true;
+        syncTouchStates();
+      } else if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
+        keyState.right = true;
+        syncTouchStates();
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && state.mode === 'build' && state.selectedId !== null) {
+        deletePartById(state.selectedId);
+      } else if (e.key === 'r' || e.key === 'R') {
+        if (state.mode === 'build' && state.selectedId !== null) {
+          const part = state.parts.find(p => p.id === state.selectedId);
+          if (part) {
+            part.rotY = (part.rotY + Math.PI / 2) % (Math.PI * 2);
+            syncPartTransform(part);
+            sound.playClick(490);
+          }
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
+        keyState.left = false;
+        syncTouchStates();
+      } else if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
+        keyState.right = false;
+        syncTouchStates();
+      }
+    });
+
+    // =========================================================================
+    // 14. RESPONSIVE RESIZE & MAIN ANIMATION LOOP
+    // =========================================================================
+    function handleResize() {
+      if (!viewportContainer) return;
+      const rect = viewportContainer.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+      positionInspectorPopup();
+    }
+
+    window.addEventListener('resize', handleResize);
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (state.mode === 'play') {
+        stepSimulation(dt);
+        updateSmokeParticles(dt);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function () {
+      handleResize();
+      animate(performance.now());
+    };
+  </script>
+</body>
+</html>

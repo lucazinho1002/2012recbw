@@ -1,0 +1,383 @@
+#screen-editor {
+  position: relative;
+  background: #87CEEB;
+}
+
+#canvas-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* TOP BAR: BOTÕES CIRCULARES BRANCOS ESTILO BLOCKSWORLD 2012 */
+.editor-topbar {
+  position: absolute;
+  top: 12px;
+  right: 136px;
+  display: flex;
+  gap: 10px;
+  z-index: 20;
+  transition: right 0.22s ease;
+}
+
+.editor-topbar.expanded {
+  right: 14px;
+}
+
+.bw-circle-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #e6e6e6 100%);
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 900;
+  color: #333333;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.bw-circle-btn:active {
+  transform: scale(0.92);
+}
+
+.bw-circle-btn.play-btn {
+  background: linear-gradient(180deg, #6be052 0%, #3fb528 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.bw-circle-btn.play-btn.playing {
+  background: linear-gradient(180deg, #ff5e5e 0%, #d42626 100%);
+}
+
+/* GAVETA LATERAL (SIDEBAR EXATA DO VÍDEO) */
+.bw-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 126px;
+  height: 100%;
+  background: rgba(24, 24, 24, 0.92);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  padding: 7px;
+  gap: 6px;
+  overflow-y: auto;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.45);
+  transition: transform 0.22s ease;
+}
+
+.bw-drawer.closed {
+  transform: translateX(100%);
+}
+
+.drawer-section-title {
+  font-size: 9px;
+  font-weight: 800;
+  color: #9e9e9e;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding-left: 2px;
+}
+
+/* 1. CAIXA LARANJA NO TOPO COM BLOCOS */
+.orange-blocks-tray {
+  background: linear-gradient(180deg, #ff8c1a 0%, #e66a00 100%);
+  border: 1px solid #ffaa44;
+  border-radius: 10px;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.block-icon-card {
+  background: linear-gradient(180deg, #ffffff 0%, #ececec 100%);
+  border: 1px solid #c86400;
+  border-radius: 7px;
+  height: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s;
+}
+
+.block-icon-card:active {
+  transform: scale(0.92);
+}
+
+.block-icon-card .ico {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.block-icon-card .lbl {
+  font-size: 7px;
+  font-weight: 800;
+  color: #555;
+  margin-top: 2px;
+}
+
+/* 2. PALETA DE CORES (4x4 COMO NO VÍDEO) */
+.colors-4x4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  background: #141414;
+  padding: 4px;
+  border-radius: 7px;
+}
+
+.swatch-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+}
+
+.swatch-btn:active {
+  transform: scale(0.9);
+}
+
+/* 3. TEXTURAS (METAL, WOOD, BRICK, CARBON) */
+.textures-4x1 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  background: #141414;
+  padding: 4px;
+  border-radius: 7px;
+}
+
+.tex-btn {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+  cursor: pointer;
+}
+
+/* 4. PERSONAGENS (DUDE / ALIEN) */
+.chars-2x1 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.char-card {
+  background: linear-gradient(180deg, #4a4a4a 0%, #333333 100%);
+  border: 1px solid #666666;
+  border-radius: 6px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 5. BLOCOS DE PROGRAMAÇÃO VISUAL (LARANJA AÇÃO / AZUL EVENTO) */
+.code-tiles-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bw-code-block {
+  border-radius: 6px;
+  padding: 6px 4px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.bw-code-block.action-orange {
+  background: linear-gradient(180deg, #ffaa22 0%, #e67e00 100%);
+  border: 1px solid #b86200;
+}
+
+.bw-code-block.event-blue {
+  background: linear-gradient(180deg, #33bbff 0%, #0088dd 100%);
+  border: 1px solid #0066aa;
+}
+
+/* GIZMO FLUTUANTE SOBRE O BLOCO SELECIONADO */
+.floating-gizmo {
+  position: absolute;
+  z-index: 22;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.gizmo-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+
+.gizmo-circle.rotate {
+  background: linear-gradient(180deg, #4da6ff, #1a75ff);
+}
+
+.gizmo-circle.delete {
+  background: linear-gradient(180deg, #ff4d4d, #cc0000);
+}
+
+/* PAINEL DE PROGRAMAÇÃO VISUAL DO FOGUETE (WHEN -> THEN) */
+.prog-overlay-card {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 215px;
+  background: rgba(22, 22, 22, 0.92);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  padding: 10px 12px;
+  z-index: 28;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.prog-overlay-card h4 {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffaa22;
+  text-align: center;
+  letter-spacing: 0.4px;
+}
+
+.prog-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prog-keyword {
+  font-size: 10px;
+  font-weight: 900;
+  color: #bbbbbb;
+  width: 38px;
+}
+
+.prog-slot-box {
+  flex: 1;
+  height: 30px;
+  border-radius: 6px;
+  border: 2px dashed rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #dddddd;
+  cursor: pointer;
+}
+
+.prog-slot-box.filled-blue {
+  background: linear-gradient(180deg, #33bbff 0%, #0088dd 100%);
+  border: 1px solid #0066aa;
+  color: #ffffff;
+}
+
+.prog-slot-box.filled-orange {
+  background: linear-gradient(180deg, #ffaa22 0%, #e67e00 100%);
+  border: 1px solid #b86200;
+  color: #ffffff;
+}
+
+/* CONTROLES DE TOQUE NO MODO PLAY (TAP LEFT / TAP RIGHT) */
+#play-controls {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 26px;
+  z-index: 22;
+  pointer-events: none;
+}
+
+.bw-touch-pad {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 12px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+}
+
+.bw-touch-pad:active {
+  background: rgba(51, 187, 255, 0.55);
+  transform: scale(0.95);
+}
+
+.hud-status-pill {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  background: rgba(20, 20, 20, 0.65);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  z-index: 15;
+  pointer-events: none;
+}

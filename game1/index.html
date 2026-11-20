@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blocksworld - Main Menu</title>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+  <div id="rotate-warning">
+    <div style="font-size: 48px;">📱↻</div>
+    <h2>Vire o celular na horizontal</h2>
+    <p style="color: #aaa; font-size: 14px;">O jogo roda deitado em proporção 4:3.</p>
+  </div>
+
+  <div id="app-container">
+    <div id="screen-menu" class="screen">
+      <!-- Lateral Esquerda com título vertical BLOCKSWORLD -->
+      <div class="menu-sidebar-brand">
+        <div class="vertical-brand-text">BLOCKSWORLD</div>
+        <div class="brand-sub">Pre-E3 2012</div>
+      </div>
+
+      <!-- Grade Central de Mundos com Arte Isométrica -->
+      <div class="menu-worlds-area">
+        <div class="section-caption">Featured Worlds</div>
+        <div class="world-cards-grid">
+          <a href="editor.html?world=rocket" class="world-preview-tile">
+            <div class="tile-scene-art art-rocket">
+              <div class="mini-cube-red">
+                <div class="mini-rocket-body"></div>
+              </div>
+            </div>
+            <div class="tile-footer-label">Rocket Demo</div>
+          </a>
+
+          <a href="editor.html?world=car" class="world-preview-tile">
+            <div class="tile-scene-art art-car">
+              <div class="mini-car-body">
+                <div class="mini-wheel" style="left: 4px;"></div>
+                <div class="mini-wheel" style="right: 4px;"></div>
+              </div>
+            </div>
+            <div class="tile-footer-label">Car &amp; Jump</div>
+          </a>
+
+          <a href="editor.html?world=empty" class="world-preview-tile">
+            <div class="tile-scene-art art-sandbox">
+              <span style="font-size: 30px; margin-top: 10px;">🧱</span>
+            </div>
+            <div class="tile-footer-label">Blank World</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- 5 Botões em Pílula à Direita (idênticos ao vídeo) -->
+      <div class="menu-actions-col">
+        <a href="editor.html?world=rocket" class="bw-pill-btn primary">Get Started</a>
+        <a href="editor.html?world=empty" class="bw-pill-btn">New World</a>
+        <a href="worlds.html" class="bw-pill-btn">My Worlds</a>
+        <a href="worlds2.html" class="bw-pill-btn">Other Worlds</a>
+        <a href="settings.html" class="bw-pill-btn">Settings</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

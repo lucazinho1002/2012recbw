@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blocksworld - Build &amp; Play</title>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/editor.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+</head>
+<body>
+  <div id="rotate-warning">
+    <div style="font-size: 48px;">📱↻</div>
+    <h2>Vire o celular na horizontal</h2>
+    <p style="color: #aaa; font-size: 14px;">O jogo roda deitado em proporção 4:3.</p>
+  </div>
+
+  <div id="app-container">
+    <div id="screen-editor" class="screen">
+      <div id="canvas-container"></div>
+
+      <!-- Top Bar Circular Buttons -->
+      <div class="editor-topbar" id="editor-topbar">
+        <a href="index.html" class="bw-circle-btn" title="Home">🏠</a>
+        <button class="bw-circle-btn" id="btn-toggle-sidebar" title="Drawer">☰</button>
+        <button class="bw-circle-btn play-btn" id="btn-play" title="Play / Stop">▶</button>
+      </div>
+
+      <!-- Gaveta Lateral Direita (idêntica ao vídeo) -->
+      <div id="sidebar" class="bw-drawer">
+        <div class="drawer-section-title">Blocks</div>
+        <div class="orange-blocks-tray">
+          <button class="block-icon-card" data-block="cube">
+            <span class="ico">🟥</span><span class="lbl">CUBE</span>
+          </button>
+          <button class="block-icon-card" data-block="wedge">
+            <span class="ico">◢</span><span class="lbl">WEDGE</span>
+          </button>
+          <button class="block-icon-card" data-block="rocket">
+            <span class="ico">🚀</span><span class="lbl">ROCKET</span>
+          </button>
+          <button class="block-icon-card" data-block="wheel">
+            <span class="ico">🛞</span><span class="lbl">WHEEL</span>
+          </button>
+          <button class="block-icon-card" data-block="jump">
+            <span class="ico">📐</span><span class="lbl">JUMP</span>
+          </button>
+        </div>
+
+        <div class="drawer-section-title">Colors</div>
+        <div class="colors-4x4">
+          <div class="swatch-btn" data-color="#e62e2e" style="background:#e62e2e;"></div>
+          <div class="swatch-btn" data-color="#ff8c1a" style="background:#ff8c1a;"></div>
+          <div class="swatch-btn" data-color="#ffd633" style="background:#ffd633;"></div>
+          <div class="swatch-btn" data-color="#33cc33" style="background:#33cc33;"></div>
+          <div class="swatch-btn" data-color="#33bbff" style="background:#33bbff;"></div>
+          <div class="swatch-btn" data-color="#1e73be" style="background:#1e73be;"></div>
+          <div class="swatch-btn" data-color="#9933ff" style="background:#9933ff;"></div>
+          <div class="swatch-btn" data-color="#ffffff" style="background:#ffffff;"></div>
+        </div>
+
+        <div class="drawer-section-title">Textures</div>
+        <div class="textures-4x1">
+          <div class="tex-btn" data-texture="metal" style="background:linear-gradient(135deg,#bbb,#777);">MTL</div>
+          <div class="tex-btn" data-texture="wood" style="background:linear-gradient(135deg,#c97a32,#8f4c14);">WOD</div>
+          <div class="tex-btn" data-texture="brick" style="background:linear-gradient(135deg,#b83b3b,#7d1f1f);">BRK</div>
+          <div class="tex-btn" data-texture="carbon" style="background:linear-gradient(135deg,#3a3a3a,#161616);">CRB</div>
+        </div>
+
+        <div class="drawer-section-title">Characters</div>
+        <div class="chars-2x1">
+          <button class="char-card" data-block="dude">👤 Dude</button>
+          <button class="char-card" data-block="alien">👽 Alien</button>
+        </div>
+
+        <div class="drawer-section-title">Programming</div>
+        <div class="code-tiles-stack">
+          <div class="bw-code-block action-orange" data-code="FIRE">FIRE</div>
+          <div class="bw-code-block event-blue" data-code="TAP LEFT">TAP LEFT</div>
+          <div class="bw-code-block event-blue" data-code="TAP RIGHT">TAP RIGHT</div>
+        </div>
+      </div>
+
+      <!-- Gizmo Flutuante -->
+      <div id="floating-gizmo" class="floating-gizmo hidden">
+        <button class="gizmo-circle rotate" id="btn-rotate">↻</button>
+        <button class="gizmo-circle delete" id="btn-delete">✕</button>
+      </div>
+
+      <!-- Painel Visual WHEN -> THEN do Foguete -->
+      <div id="programming-panel" class="prog-overlay-card hidden">
+        <h4>ROCKET LOGIC</h4>
+        <div class="prog-rule-row">
+          <span class="prog-keyword">WHEN</span>
+          <div class="prog-slot-box" id="slot-event">Tap to assign TAP LEFT</div>
+        </div>
+        <div class="prog-rule-row">
+          <span class="prog-keyword">THEN</span>
+          <div class="prog-slot-box filled-orange">FIRE</div>
+        </div>
+        <button class="bw-pill-btn" id="btn-close-prog" style="padding: 5px 12px; font-size: 11px; margin-top: 2px;">Done</button>
+      </div>
+
+      <!-- Controles de Toque no Modo Play -->
+      <div id="play-controls" class="hidden">
+        <div class="bw-touch-pad" id="touch-left">TAP<br>LEFT</div>
+        <div class="bw-touch-pad" id="touch-right">TAP<br>RIGHT</div>
+      </div>
+
+      <div class="hud-status-pill">Tap block to select • Drag on ground to move</div>
+    </div>
+  </div>
+
+  <script src="js/editor.js"></script>
+</body>
+</html>

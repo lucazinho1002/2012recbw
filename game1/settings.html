@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blocksworld - Settings</title>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div id="rotate-warning">
+    <div style="font-size: 48px;">📱↻</div>
+    <h2>Vire o celular na horizontal</h2>
+    <p style="color: #aaa; font-size: 14px;">O jogo roda deitado em proporção 4:3.</p>
+  </div>
+
+  <div id="app-container">
+    <div class="screen subpage-screen">
+      <div class="subpage-brand-strip">
+        <div class="vertical-brand-text">BLOCKSWORLD</div>
+        <div style="font-size: 9px; font-weight: 700; color: #a8a8a8;">OPTIONS</div>
+      </div>
+
+      <div class="subpage-main">
+        <div class="subpage-topbar">
+          <h1>Settings</h1>
+          <a href="index.html" class="bw-pill-btn" style="padding: 8px 18px;">← Main Menu</a>
+        </div>
+
+        <div class="settings-panel-box">
+          <div class="bw-setting-item">
+            <span>Sound Effects</span>
+            <input type="checkbox" class="bw-switch" id="opt-sound" checked>
+          </div>
+          <div class="bw-setting-item">
+            <span>Build Ground Grid</span>
+            <input type="checkbox" class="bw-switch" id="opt-grid" checked>
+          </div>
+          <div class="bw-setting-item">
+            <span>Real-time 3D Shadows</span>
+            <input type="checkbox" class="bw-switch" id="opt-shadows" checked>
+          </div>
+          <p id="settings-status" style="color: #2e8b57; font-size: 13px; font-weight: 800; min-height: 18px;"></p>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button id="btn-save-settings" class="bw-pill-btn primary" style="width: 180px;">Save Settings</button>
+          <a href="index.html" class="bw-pill-btn" style="width: 150px;">Done</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/settings.js"></script>
+</body>
+</html>
